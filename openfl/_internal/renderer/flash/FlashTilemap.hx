@@ -20,7 +20,6 @@ class FlashTilemap {
 	private static var colorTransform = new ColorTransform ();
 	private static var destPoint = new Point ();
 	private static var sourceRect = new Rectangle ();
-	private static var tileMatrix = new Matrix ();
 	
 	
 	public static inline function render (tilemap:Tilemap):Void {
@@ -28,6 +27,11 @@ class FlashTilemap {
 		#if flash
 		if (tilemap.stage == null || !tilemap.visible || tilemap.alpha <= 0) return;
 		
+		tilemap.__updateTileArray ();
+		
+		if (tilemap.__tileArray == null || tilemap.__tileArray.length == 0) return;
+		
+		var defaultTileset = tilemap.tileset;
 		var bitmapData = tilemap.bitmapData;
 		
 		bitmapData.lock ();
@@ -35,51 +39,55 @@ class FlashTilemap {
 		
 		var smoothing = tilemap.smoothing;
 		
-		var tiles, count, tile, alpha, visible, tileset, tileData, sourceBitmapData;
+		var alpha, visible, tileset, id, tileData, sourceBitmapData;
 		
-		if (tilemap.__tiles.length > 0) {
+		var tileArray = tilemap.__tileArray;
+		var tileMatrix;
+		
+		for (tile in tileArray) {
 			
-			tiles = tilemap.__tiles;
-			count = tiles.length;
+			alpha = tile.alpha;
+			visible = tile.visible;
+			if (!visible || alpha <= 0) continue;
 			
-			for (i in 0...count) {
+			tileset = tile.tileset;
+			if (tileset == null) tileset = defaultTileset;
+			if (tileset == null) continue;
+			
+			id = tile.id;
+			
+			if (id == -1) {
 				
-				tile = tiles[i];
+				// TODO: Support arbitrary source rect
+				//tile.getRect (tileRect);
+				continue;
 				
-				alpha = tile.alpha;
-				visible = tile.visible;
+			} else {
 				
-				if (!visible || alpha <= 0) continue;
-				
-				tileset = (tile.tileset != null) ? tile.tileset : tilemap.tileset;
-				
-				if (tileset == null) continue;
-				
-				tileData = tileset.__data[tile.id];
-				
+				tileData = tileset.__data[id];
 				if (tileData == null) continue;
 				
-				sourceBitmapData = tileData.__bitmapData;
+				//tileRect.setTo (tileData.x, tileData.y, tileData.width, tileData.height);
 				
-				tileMatrix.setTo (1, 0, 0, 1, -tile.originX, -tile.originY);
-				tileMatrix.concat (tile.matrix);
+			}
+			
+			sourceBitmapData = tileData.__bitmapData;
+			if (sourceBitmapData == null) continue;
+			
+			tileMatrix = tile.matrix;
+			
+			if (alpha == 1 && tileMatrix.a == 1 && tileMatrix.b == 0 && tileMatrix.c == 0 && tileMatrix.d == 1) {
 				
-				if (sourceBitmapData == null || alpha == 0) continue;
+				destPoint.x = tileMatrix.tx;
+				destPoint.y = tileMatrix.ty;
 				
-				if (alpha == 1 && tileMatrix.a == 1 && tileMatrix.b == 0 && tileMatrix.c == 0 && tileMatrix.d == 1) {
-					
-					destPoint.x = tile.x - tile.originX;
-					destPoint.y = tile.y - tile.originY;
-					
-					bitmapData.copyPixels (sourceBitmapData, sourceBitmapData.rect, destPoint, null, null, true);
-					
-				} else {
-					
-					colorTransform.alphaMultiplier = alpha;
-					
-					bitmapData.draw (sourceBitmapData, tileMatrix, colorTransform, null, null, smoothing);
-					
-				}
+				bitmapData.copyPixels (sourceBitmapData, sourceBitmapData.rect, destPoint, null, null, true);
+				
+			} else {
+				
+				colorTransform.alphaMultiplier = alpha;
+				
+				bitmapData.draw (sourceBitmapData, tileMatrix, colorTransform, null, null, smoothing);
 				
 			}
 			

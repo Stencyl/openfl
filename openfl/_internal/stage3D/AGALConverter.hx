@@ -141,7 +141,18 @@ class AGALConverter {
 				
 				case 0x05: // rcp
 					
-					sb.add (dr.toGLSL () + " = vec4(1) / " + sr1.toGLSL () + ", " + sr2.toGLSL () + "; // rcp (untested)");
+					var sr = sr1.toGLSL ();
+					
+					if (sr.indexOf (".") > -1) { // swizzle
+					
+						sb.add (dr.toGLSL () + " = 1.0 / " + sr1.toGLSL () + "; // rcp");
+						
+					} else {
+						
+						sb.add (dr.toGLSL () + " = vec4(1) / " + sr1.toGLSL () + "; // rcp");
+						
+					}
+					
 					map.addDR (dr, RegisterUsage.VECTOR_4);
 					map.addSR (sr1, RegisterUsage.VECTOR_4);
 				
@@ -969,12 +980,12 @@ private class SamplerRegister {
 			// nearest
 			case 1:
 				
-				minFilter = (f != 0) ? GL.NEAREST_MIPMAP_LINEAR : GL.NEAREST_MIPMAP_NEAREST;
+				minFilter = (f != 0) ? GL.LINEAR_MIPMAP_NEAREST : GL.NEAREST_MIPMAP_NEAREST;
 			
 			// linear
 			case 2:
 				
-				minFilter = (f != 0) ? GL.LINEAR_MIPMAP_LINEAR : GL.LINEAR_MIPMAP_NEAREST;
+				minFilter = (f != 0) ? GL.LINEAR_MIPMAP_LINEAR : GL.NEAREST_MIPMAP_LINEAR;
 			
 			default:
 				

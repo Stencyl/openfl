@@ -21,8 +21,10 @@ import openfl.media.Sound;
 import openfl.net.URLLoader;
 import openfl.net.URLRequest;
 import openfl.text.Font;
+import openfl.utils.Assets;
+import openfl.utils.AssetLibrary;
+import openfl.utils.AssetType;
 import openfl.utils.ByteArray;
-import openfl.Assets;
 
 #if !openfl_debug
 @:fileXml('tags="haxe,release"')
@@ -112,6 +114,7 @@ import openfl.Assets;
 						__copyChannel (image, alpha);
 						
 						cachedImages.set (id, image);
+						cachedImages.remove (bitmapSymbol.alpha);
 						alphaCheck.set (id, true);
 						
 						return image;
@@ -253,6 +256,7 @@ import openfl.Assets;
 								__copyChannel (image, alpha);
 								
 								cachedImages.set (id, image);
+								cachedImages.remove (bitmapSymbol.alpha);
 								alphaCheck.set (id, true);
 								
 								promise.complete (image);

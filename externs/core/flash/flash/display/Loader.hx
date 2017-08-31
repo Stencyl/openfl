@@ -12,15 +12,17 @@ extern class Loader extends DisplayObjectContainer {
 	
 	public var content (default, null):DisplayObject;
 	public var contentLoaderInfo (default, null):LoaderInfo;
-	
-	#if flash
 	@:require(flash10_1) public var uncaughtErrorEvents (default, null):UncaughtErrorEvents;
-	#end
 	
 	public function new ();
 	public function close ():Void;
 	public function load (request:URLRequest, context:LoaderContext = null):Void;
 	public function loadBytes (buffer:ByteArray, context:LoaderContext = null):Void;
+	
+	#if air
+	public function loadFilePromise (promise:flash.desktop.IFilePromise, ?context:flash.system.LoaderContext):Void;
+	#end
+	
 	public function unload ():Void;
 	@:require(flash10) public function unloadAndStop (gc:Bool = true):Void;
 	

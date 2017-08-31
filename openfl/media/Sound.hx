@@ -2,6 +2,7 @@ package openfl.media;
 
 
 import haxe.io.Path;
+import lime.app.Future;
 import lime.app.Preloader;
 import lime.media.AudioBuffer;
 import lime.media.AudioSource;
@@ -103,7 +104,7 @@ class Sound extends EventDispatcher {
 	}
 	
 	
-	public function loadCompressedDataFromByteArray (bytes:ByteArray, bytesLength:Int #if (openfl < "5.0.0"), forcePlayAsMusic:Bool = false #end):Void {
+	public function loadCompressedDataFromByteArray (bytes:ByteArray, bytesLength:Int):Void {
 		
 		if (bytes == null || bytesLength <= 0) {
 			
@@ -131,6 +132,17 @@ class Sound extends EventDispatcher {
 			dispatchEvent (new Event (Event.COMPLETE));
 			
 		}
+		
+	}
+	
+	
+	public static function loadFromFile (path:String):Future<Sound> {
+		
+		return AudioBuffer.loadFromFile (path).then (function (audioBuffer) {
+			
+			return Future.withValue (fromAudioBuffer (audioBuffer));
+			
+		});
 		
 	}
 	

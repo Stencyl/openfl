@@ -938,11 +938,11 @@ import openfl.profiler.Telemetry;
 			
 			case Context3DMipFilter.MIPLINEAR:
 				
-				state.minFilter = GL.LINEAR_MIPMAP_LINEAR;
+				state.minFilter = filter == Context3DTextureFilter.NEAREST ? GL.NEAREST_MIPMAP_LINEAR : GL.LINEAR_MIPMAP_LINEAR;
 			
 			case Context3DMipFilter.MIPNEAREST:
 				
-				state.minFilter = GL.NEAREST_MIPMAP_NEAREST;
+				state.minFilter = filter == Context3DTextureFilter.NEAREST ? GL.NEAREST_MIPMAP_NEAREST : GL.LINEAR_MIPMAP_NEAREST;
 			
 			case Context3DMipFilter.MIPNONE:
 				
@@ -985,7 +985,7 @@ import openfl.profiler.Telemetry;
 	}
 	
 	
-	public function setTextureAt(sampler:Int, texture:TextureBase):Void {
+	public function setTextureAt (sampler:Int, texture:TextureBase):Void {
 		
 		if (__samplerTextures[sampler] != texture) {
 			
@@ -999,7 +999,7 @@ import openfl.profiler.Telemetry;
 	
 	
 
-	public function setVertexBufferAt(index:Int, buffer:VertexBuffer3D, bufferOffset:Int = 0, format:Context3DVertexBufferFormat = FLOAT_4):Void {
+	public function setVertexBufferAt (index:Int, buffer:VertexBuffer3D, bufferOffset:Int = 0, format:Context3DVertexBufferFormat = FLOAT_4):Void {
 		
 		if (buffer == null) {
 			
@@ -1330,6 +1330,8 @@ import openfl.profiler.Telemetry;
 		GLUtils.CheckGLError ();
 		
 		var height = 0;
+		var offsetX = 0;
+		var offsetY = 0;
 		
 		if (__renderToTexture != null) {
 		
@@ -1348,11 +1350,13 @@ import openfl.profiler.Telemetry;
 		} else {
 			
 			height = backBufferHeight;
+			offsetX = Std.int (__stage3D.x);
+			offsetY = Std.int (__stage3D.y);
 			
 		}
 		
-		GL.scissor (Std.int (__scissorRectangle.x),
-			Std.int (height - Std.int (__scissorRectangle.y) - Std.int (__scissorRectangle.height)),
+		GL.scissor (Std.int (__scissorRectangle.x) + offsetX,
+			height - Std.int (__scissorRectangle.y) - Std.int (__scissorRectangle.height) + offsetY,
 			Std.int (__scissorRectangle.width),
 			Std.int (__scissorRectangle.height)
 		);
@@ -1362,6 +1366,13 @@ import openfl.profiler.Telemetry;
 	
 	
 	private function __updateBackbufferViewport ():Void {
+		
+		if (!Stage3D.__active) {
+			
+			Stage3D.__active = true;
+			__renderSession.renderer.clear ();
+			
+		}
 		
 		if (__renderToTexture == null && backBufferWidth > 0 && backBufferHeight > 0) {
 			

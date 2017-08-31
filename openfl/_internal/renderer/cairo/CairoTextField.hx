@@ -63,11 +63,12 @@ class CairoTextField {
 		var width = graphics.__width;
 		var height = graphics.__height;
 		
-		var renderable = (textEngine.border || textEngine.background || (textEngine.text != null && textEngine.text != ""));
+		var renderable = (textEngine.border || textEngine.background || textEngine.text != null);
 		
 		if (cairo != null) {
 			
-			var surface:CairoImageSurface = cast cairo.target;
+			//var surface:CairoImageSurface = cast cairo.target;
+			var surface = graphics.__bitmap.getSurface ();
 			
 			if (!renderable || (graphics.__dirty && (width != surface.width || height != surface.height))) {
 				
@@ -306,9 +307,9 @@ class CairoTextField {
 									
 								}
 								
-								cairo.moveTo (Math.floor (group.offsetX + advance) + 0.5, group.offsetY + 0.5);
+								cairo.moveTo (Math.floor (group.offsetX + advance) + 0.5, group.offsetY - 2 + 0.5);
 								cairo.lineWidth = 1;
-								cairo.lineTo (Math.floor (group.offsetX + advance) + 0.5, group.offsetY + group.height - 1);
+								cairo.lineTo (Math.floor (group.offsetX + advance) + 0.5, group.offsetY - 2 + group.height - 1);
 								cairo.stroke ();
 								
 							}

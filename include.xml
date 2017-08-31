@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension>
 	
+	<set name="lime-version" value="5.4.*" />
+	
 	<haxedef name="native" if="cpp || neko" />
 	<set name="native" if="cpp || neko" />
 	
@@ -17,20 +19,22 @@
 	
 	<section unless="lime || custom-backend">
 		
+		<!--<haxelib name="lime" version="${lime-version}" unless="create" />-->
+		<!--<haxelib name="lime" version="${lime-version}" if="display || rebuild" />-->
 		<haxelib name="lime" unless="create" />
 		<haxelib name="lime" if="display || rebuild" />
 		
 	</section>
 	
-	<template path="templates" />
-	
 	<section if="lime">
 		
-		<log error="OpenFL ${openfl} is not compatible with Lime ${lime} (version 4.0.* is required)" if="${lime < 4.0.0} || ${lime >= 4.1.0}" unless="setup || disable-version-check" />
+		<log error="OpenFL ${openfl} is not compatible with Lime ${lime} (version 5.4.* is required)" if="${lime < 5.4.0} || ${lime >= 5.5.0}" unless="setup || disable-version-check" />
 		
 	</section>
 	
-	<source path="externs/core/flash" if="flash" unless="display" />
+	<template path="templates" />
+	
+	<source path="externs/core/flash" if="flash" />
 	<source path="externs/core/openfl" if="display || flash" />
 	<source path="externs/extras" if="display" />
 	
@@ -75,6 +79,16 @@
 			<module name="openfl" if="modular">
 				
 				<source path="" package="openfl" exclude="openfl._internal.renderer.console.*|*.GLGraphics|*.SWFLibrary" />
+				
+				<!-- @:expose on enums do not work in Haxe 3.4.2 -->
+				<class remove="lime.graphics.opengl.GLContextType" />
+				<class remove="lime.graphics.ImageChannel" />
+				<class remove="lime.graphics.ImageType" />
+				<class remove="lime.graphics.RendererType" />
+				<class remove="lime.ui.FileDialogType" />
+				<class remove="lime.ui.MouseCursor" />
+				<class remove="lime.system.Endian" />
+				<class remove="lime.system.SensorType" />
 				
 				<include type="openfl.display3D._Program3D.Uniform" />
 				<include type="openfl.display3D._Program3D.UniformMap" />
