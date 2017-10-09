@@ -210,6 +210,11 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	}
 	
 	
+	public inline function toArray ():Array<T> {
+		
+		return this.data.getData();
+		
+	}
 	
 	
 	// Getters & Setters
@@ -307,6 +312,10 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	
 	private var __array:Array<Bool>;
 	
+	public function getData()
+	{
+		return __array;
+	}
 	
 	public function new (?length:Int, ?fixed:Bool, ?array:Array<Bool>):Void {
 		
@@ -624,6 +633,10 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	
 	private var __array:Array<Float>;
 	
+	public function getData()
+	{
+		return __array;
+	}
 	
 	public function new (?length:Int, ?fixed:Bool, ?array:Array<Float>):Void {
 		
@@ -934,6 +947,10 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	
 	private var __array:Array<Function>;
 	
+	public function getData()
+	{
+		return __array;
+	}
 	
 	public function new (?length:Int, ?fixed:Bool, ?array:Array<Function>):Void {
 		
@@ -1252,6 +1269,10 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	
 	private var __array:Array<Int>;
 	
+	public function getData()
+	{
+		return __array;
+	}
 	
 	public function new (?length:Int, ?fixed:Bool, ?array:Array<Int>):Void {
 		
@@ -1560,6 +1581,11 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	public var length (get, set):Int;
 	
 	private var __array:Array<T>;
+
+	public function getData()
+	{
+		return __array;
+	}
 	
 	
 	public function new (?length:Int, ?fixed:Bool, ?array:Array<T>):Void {
@@ -1880,6 +1906,8 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	public function splice (pos:Int, len:Int):IVector<T>;
 	public function toString ():String;
 	public function unshift (x:T):Void;
+
+	public function getData ():Array<T>;
 	
 }
 
