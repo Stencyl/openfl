@@ -171,8 +171,8 @@ import openfl.Vector;
 			var bitmapWidth, bitmapHeight, tileWidth:Float, tileHeight:Float;
 			var uvX, uvY, uvWidth, uvHeight;
 			var x, y, x2, y2, x3, y3, x4, y4;
-			var redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier;
-			var redOffset, greenOffset, blueOffset, alphaOffset;
+			//var redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier;
+			//var redOffset, greenOffset, blueOffset, alphaOffset;
 			
 			position = 0;
 			
@@ -277,7 +277,7 @@ import openfl.Vector;
 				
 				alpha *= worldAlpha;
 				
-				tileColorTransform = this.colorTransform;
+				/*tileColorTransform = this.colorTransform;
 				tileColorTransform.__combine (defaultColorTransform);
 				
 				redMultiplier = tileColorTransform.redMultiplier;
@@ -287,7 +287,7 @@ import openfl.Vector;
 				redOffset = tileColorTransform.redOffset;
 				greenOffset = tileColorTransform.greenOffset;
 				blueOffset = tileColorTransform.blueOffset;
-				alphaOffset = tileColorTransform.alphaOffset;
+				alphaOffset = tileColorTransform.alphaOffset;*/
 				
 				__bufferData[offset + 0] = x;
 				__bufferData[offset + 1] = y;
@@ -324,15 +324,15 @@ import openfl.Vector;
 					__bufferData[offset + (attributeLength * i) + 4] = alpha;
 					
 					// 4 x 4 matrix
-					__bufferData[offset + (attributeLength * i) + 5] = redMultiplier;
-					__bufferData[offset + (attributeLength * i) + 10] = greenMultiplier;
-					__bufferData[offset + (attributeLength * i) + 15] = blueMultiplier;
-					__bufferData[offset + (attributeLength * i) + 20] = alphaMultiplier;
+					__bufferData[offset + (attributeLength * i) + 5] = 1;//redMultiplier;
+					__bufferData[offset + (attributeLength * i) + 10] = 1;//greenMultiplier;
+					__bufferData[offset + (attributeLength * i) + 15] = 1;//blueMultiplier;
+					__bufferData[offset + (attributeLength * i) + 20] = 1;//alphaMultiplier;
 					
-					__bufferData[offset + (attributeLength * i) + 21] = redOffset;
-					__bufferData[offset + (attributeLength * i) + 22] = greenOffset;
-					__bufferData[offset + (attributeLength * i) + 23] = blueOffset;
-					__bufferData[offset + (attributeLength * i) + 24] = alphaOffset;
+					__bufferData[offset + (attributeLength * i) + 21] = 0;//redOffset;
+					__bufferData[offset + (attributeLength * i) + 22] = 0;//greenOffset;
+					__bufferData[offset + (attributeLength * i) + 23] = 0;//blueOffset;
+					__bufferData[offset + (attributeLength * i) + 24] = 0;//alphaOffset;
 					
 				}
 				
