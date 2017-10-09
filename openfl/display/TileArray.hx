@@ -255,14 +255,25 @@ import openfl.Vector;
 				}
 				
 				tileMatrix = this.matrix;
-				x = tileMatrix.__transformX (0, 0);
-				y = tileMatrix.__transformY (0, 0);
+
+				/*
+				Inlining this by hand, since it's causing a lot of float allocations.
+				x = tileMatrix.__transformX (0, 0); px * a + py * c + tx
+				y = tileMatrix.__transformY (0, 0); 
 				x2 = tileMatrix.__transformX (tileWidth, 0);
 				y2 = tileMatrix.__transformY (tileWidth, 0);
 				x3 = tileMatrix.__transformX (0, tileHeight);
 				y3 = tileMatrix.__transformY (0, tileHeight);
 				x4 = tileMatrix.__transformX (tileWidth, tileHeight);
-				y4 = tileMatrix.__transformY (tileWidth, tileHeight);
+				y4 = tileMatrix.__transformY (tileWidth, tileHeight);*/
+				x = tileMatrix.tx;
+				y = tileMatrix.ty;
+				x2 = tileWidth * tileMatrix.a + x;
+				y2 = tileWidth * tileMatrix.b + y;
+				x3 = tileHeight * tileMatrix.c + x;
+				y3 = tileHeight * tileMatrix.d + y;
+				x4 = x2 + x3 - x;
+				y4 = y2 + y3 - y;
 				
 				alpha *= worldAlpha;
 				
