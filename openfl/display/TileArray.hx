@@ -51,8 +51,12 @@ import openfl.Vector;
 	private var __cacheAlpha:Float;
 	private var __cacheDefaultTileset:Tileset;
 	private var __colorTransform:ColorTransform;
+	#if flash
+	private var __data:Vector<Float>;
+	#else
 	private var __dataV:Vector<Float>;
 	private var __data:Array<Float>;
+	#end
 	private var __dirty:Vector<Bool>;
 	private var __length:Int;
 	private var __matrix:Matrix;
@@ -65,8 +69,12 @@ import openfl.Vector;
 	public function new (length:Int = 0) {
 		
 		__cacheAlpha = -1;
+		#if flash
+		__data = new Vector<Float> (length * DATA_LENGTH);
+		#else
 		__dataV = new Vector<Float> (length * DATA_LENGTH);
 		__data = __dataV.toArray();
+		#end
 		__dirty = new Vector<Bool> (length * DIRTY_LENGTH);
 		__shaders = new Vector<Shader> (length);
 		__tilesets = new Vector<Tileset> (length);
@@ -452,8 +460,12 @@ import openfl.Vector;
 	
 	private function set_length (value:Int):Int {
 		
+		#if flash
+		__data.length = value * DATA_LENGTH;
+		#else
 		__dataV.length = value * DATA_LENGTH;
 		__data = __dataV.toArray();
+		#end
 		__dirty.length = value * DIRTY_LENGTH;
 		__shaders.length = value;
 		__tilesets.length = value;
