@@ -224,6 +224,13 @@ import openfl.Vector;
 				
 				if (id > -1) {
 					
+					if (id >= tileset.__data.length) {
+						
+						__skipTile (i, offset);
+						continue;
+						
+					}
+					
 					tileData = tileset.__data[id];
 					
 					if (tileData == null) {
@@ -243,6 +250,14 @@ import openfl.Vector;
 				} else {
 					
 					tileRect = this.rect;
+					
+					if (tileRect == null) {
+						
+						__skipTile (i, offset);
+						continue;
+						
+					}
+					
 					tileWidth = tileRect.width;
 					tileHeight = tileRect.height;
 					
@@ -337,10 +352,10 @@ import openfl.Vector;
 					__bufferData[offset + (attributeLength * i) + 15] = 1;//blueMultiplier;
 					__bufferData[offset + (attributeLength * i) + 20] = 1;//alphaMultiplier;
 					
-					__bufferData[offset + (attributeLength * i) + 21] = 0;//redOffset;
-					__bufferData[offset + (attributeLength * i) + 22] = 0;//greenOffset;
-					__bufferData[offset + (attributeLength * i) + 23] = 0;//blueOffset;
-					__bufferData[offset + (attributeLength * i) + 24] = 0;//alphaOffset;
+					__bufferData[offset + (attributeLength * i) + 21] = 0;//redOffset / 255;
+					__bufferData[offset + (attributeLength * i) + 22] = 0;//greenOffset / 255;
+					__bufferData[offset + (attributeLength * i) + 23] = 0;//blueOffset / 255;
+					__bufferData[offset + (attributeLength * i) + 24] = 0;//alphaOffset / 255;
 					
 				}
 				

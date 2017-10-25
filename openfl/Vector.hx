@@ -293,6 +293,13 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	}
 	
 	
+	@:noCompletion @:keep private function toJSON () {
+		
+		return @:privateAccess data.toJSON ();
+		
+	}
+	
+	
 }
 
 
@@ -1908,6 +1915,8 @@ abstract Vector<T>(AbstractVector<T>) from AbstractVector<T> {
 	public function unshift (x:T):Void;
 
 	public function getData ():Array<T>;
+	
+	@:noCompletion private function toJSON ():Dynamic;
 	
 }
 
