@@ -44,6 +44,13 @@ class ShaderFilter extends BitmapFilter {
 		return shader;
 		
 	}
+
+
+	public override function getShader() {
+
+		return shader;
+
+	}
 	
 	
 }

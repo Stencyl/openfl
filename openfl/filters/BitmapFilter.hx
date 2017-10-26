@@ -54,6 +54,13 @@ class BitmapFilter {
 		return renderSession.shaderManager.defaultShader;
 		
 	}
+
+
+	public function getShader():Shader {
+
+		return null;
+
+	}
 	
 	
 }

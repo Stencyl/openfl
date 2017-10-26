@@ -105,6 +105,15 @@ import openfl.geom.Rectangle;
 		//return __colorMatrixShader;
 		
 	}
+
+
+	public override function getShader() {
+
+		var s = new ColorMatrixShader();
+		s.init (matrix);
+		return s;
+
+	}
 	
 	
 	
