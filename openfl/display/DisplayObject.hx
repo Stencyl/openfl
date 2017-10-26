@@ -833,17 +833,17 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if openf
 	
 	private function __renderGL (renderSession:RenderSession):Void {
 		
-		__updateCacheBitmap (renderSession, false);
+		/*__updateCacheBitmap (renderSession, false);
 		
 		if (__cacheBitmap != null && !__cacheBitmapRender) {
 			
 			GLBitmap.render (__cacheBitmap, renderSession);
 			
-		} else {
+		} else {*/
 			
 			GLDisplayObject.render (this, renderSession);
 			
-		}
+		//}
 		
 	}
 	
@@ -1352,15 +1352,16 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if openf
 	
 	private function get_cacheAsBitmap ():Bool {
 		
-		return (__filters == null ? __cacheAsBitmap : true);
+		return false;//(__filters == null ? __cacheAsBitmap : true);
 		
 	}
 	
 	
 	private function set_cacheAsBitmap (value:Bool):Bool {
 		
-		__setRenderDirty ();
-		return __cacheAsBitmap = value;
+		//__setRenderDirty ();
+		//return __cacheAsBitmap = value;
+		return false;
 		
 	}
 	
