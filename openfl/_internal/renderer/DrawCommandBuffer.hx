@@ -181,8 +181,6 @@ class DrawCommandBuffer {
 		ii_i = 0;
 		o_i = 0;
 
-		types = [];
-		
 	}
 	
 	
@@ -435,7 +433,7 @@ class DrawCommandBuffer {
 	
 	private function get_length ():Int {
 		
-		return types.length;
+		return t_i;
 		
 	}
 

@@ -887,9 +887,11 @@ class ConsoleRenderer extends AbstractRenderer {
 
 		var r = new DrawCommandReader (graphics.__commands);
 
-		for (type in graphics.__commands.types) {
+		var types = graphics.__commands.types;
 
-			switch (type) {
+		for (typeIndex in 0...graphics.__commands.length) {
+
+			switch (types[typeIndex]) {
 
 				//case BeginBitmapFill (bitmap, matrix, repeat, smooth):
 				case BEGIN_BITMAP_FILL:

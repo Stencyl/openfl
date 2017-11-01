@@ -281,9 +281,11 @@ class CairoGraphics {
 			
 			var data = new DrawCommandReader (graphics.__commands);
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
 				
-				switch (type) {
+				switch (types[typeIndex]) {
 					
 					case CUBIC_CURVE_TO:
 						
@@ -368,13 +370,13 @@ class CairoGraphics {
 							
 						}
 						
-						if (type == BEGIN_BITMAP_FILL) {
+						if (types[typeIndex] == BEGIN_BITMAP_FILL) {
 							
 							var c = data.readBeginBitmapFill ();
 							fillCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 							strokeCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 							
-						} else if (type == BEGIN_GRADIENT_FILL) {
+						} else if (types[typeIndex] == BEGIN_GRADIENT_FILL) {
 							
 							var c = data.readBeginGradientFill ();
 							fillCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
@@ -424,7 +426,7 @@ class CairoGraphics {
 					
 					default:
 						
-						data.skip (type);
+						data.skip (types[typeIndex]);
 					
 				}
 				
@@ -550,9 +552,11 @@ class CairoGraphics {
 		
 		var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym, r, g, b;
 		
-		for (type in commands.types) {
+		var types = commands.types;
+
+		for (typeIndex in 0...commands.length) {
 			
-			switch (type) {
+			switch (types[typeIndex]) {
 				
 				case CUBIC_CURVE_TO:
 					
@@ -977,7 +981,7 @@ class CairoGraphics {
 				
 				default:
 					
-					data.skip (type);
+					data.skip (types[typeIndex]);
 				
 			}
 			
@@ -1142,9 +1146,11 @@ class CairoGraphics {
 			
 			var data = new DrawCommandReader (graphics.__commands);
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
 				
-				switch (type) {
+				switch (types[typeIndex]) {
 					
 					case CUBIC_CURVE_TO:
 						
@@ -1275,13 +1281,13 @@ class CairoGraphics {
 						endFill ();
 						endStroke ();
 						
-						if (type == BEGIN_BITMAP_FILL) {
+						if (types[typeIndex] == BEGIN_BITMAP_FILL) {
 							
 							var c = data.readBeginBitmapFill ();
 							fillCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 							strokeCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 							
-						} else if (type == BEGIN_GRADIENT_FILL) {
+						} else if (types[typeIndex] == BEGIN_GRADIENT_FILL) {
 							
 							var c = data.readBeginGradientFill ();
 							fillCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
@@ -1356,7 +1362,7 @@ class CairoGraphics {
 					
 					default:
 						
-						data.skip (type);
+						data.skip (types[typeIndex]);
 					
 				}
 				
@@ -1404,9 +1410,11 @@ class CairoGraphics {
 			
 			var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym;
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
 				
-				switch (type) {
+				switch (types[typeIndex]) {
 					
 					case CUBIC_CURVE_TO:
 						
@@ -1481,7 +1489,7 @@ class CairoGraphics {
 					
 					default:
 						
-						data.skip (type);
+						data.skip (types[typeIndex]);
 					
 				}
 				

@@ -792,10 +792,11 @@ import js.html.CanvasRenderingContext2D;
 		
 		var data = new DrawCommandReader (__commands);
 		var path = null, stroke;
+		var types = __commands.types;
 		
-		for (type in __commands.types) {
+		for (typeIndex in 0...__commands.length) {
 			
-			switch (type) {
+			switch (types[typeIndex]) {
 				
 				case CUBIC_CURVE_TO, CURVE_TO, LINE_TO, MOVE_TO, DRAW_CIRCLE, DRAW_ELLIPSE, DRAW_RECT, DRAW_ROUND_RECT:
 					
@@ -816,7 +817,7 @@ import js.html.CanvasRenderingContext2D;
 				
 			}
 			
-			switch (type) {
+			switch (types[typeIndex]) {
 				
 				case CUBIC_CURVE_TO:
 					
@@ -907,7 +908,7 @@ import js.html.CanvasRenderingContext2D;
 				
 				default:
 					
-					data.skip (type);
+					data.skip (types[typeIndex]);
 				
 			}
 			

@@ -312,9 +312,11 @@ class CanvasGraphics {
 			
 			var data = new DrawCommandReader (graphics.__commands);
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
 				
-				switch (type) {
+				switch (types[typeIndex]) {
 					
 					case CUBIC_CURVE_TO:
 						
@@ -1184,9 +1186,11 @@ class CanvasGraphics {
 				
 				var data = new DrawCommandReader (graphics.__commands);
 				
-				for (type in graphics.__commands.types) {
+				var types = graphics.__commands.types;
+
+				for (typeIndex in 0...graphics.__commands.length) {
 					
-					switch (type) {
+					switch (types[typeIndex]) {
 						
 						case CUBIC_CURVE_TO:
 							
@@ -1449,10 +1453,12 @@ class CanvasGraphics {
 			var data = new DrawCommandReader (graphics.__commands);
 			
 			var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym;
+
+			var types = graphics.__commands.types;
 			
-			for (type in graphics.__commands.types) {
+			for (typeIndex in 0...graphics.__commands.length) {
 				
-				switch (type) {
+				switch (types[typeIndex]) {
 					
 					case CUBIC_CURVE_TO:
 						
