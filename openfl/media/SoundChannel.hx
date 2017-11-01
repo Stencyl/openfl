@@ -121,6 +121,8 @@ import openfl.media.Sound;
 		
 		if (value != null) {
 			
+			var oldPan = __soundTransform.pan;
+
 			__soundTransform.pan = value.pan;
 			__soundTransform.volume = value.volume;
 			
@@ -135,10 +137,13 @@ import openfl.media.Sound;
 				
 				__source.gain = volume;
 				
-				var position = __source.position;
-				position.x = pan;
-				position.z = -1 * Math.sqrt (1 - Math.pow (pan, 2));
-				__source.position = position;
+				if(pan != oldPan)
+				{
+					var position = __source.position;
+					position.x = pan;
+					position.z = -1 * Math.sqrt (1 - Math.pow (pan, 2));
+					__source.position = position;
+				}
 				
 				return value;
 				
