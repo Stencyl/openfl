@@ -409,13 +409,13 @@ class CanvasGraphics {
 							
 						}
 						
-						if (type == BEGIN_BITMAP_FILL) {
+						if (types[typeIndex] == BEGIN_BITMAP_FILL) {
 							
 							var c = data.readBeginBitmapFill ();
 							fillCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 							strokeCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 							
-						} else if (type == BEGIN_GRADIENT_FILL) {
+						} else if (types[typeIndex] == BEGIN_GRADIENT_FILL) {
 							
 							var c = data.readBeginGradientFill ();
 							fillCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
@@ -463,7 +463,7 @@ class CanvasGraphics {
 					
 					default:
 						
-						data.skip (type);
+						data.skip (types[typeIndex]);
 					
 				}
 				
@@ -590,9 +590,11 @@ class CanvasGraphics {
 		var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym, r, g, b;
 		var optimizationUsed, canOptimizeMatrix, st:Float, sr:Float, sb:Float, sl:Float, stl = null, sbr = null;
 		
-		for (type in commands.types) {
+		var types = commands.types;
+
+		for (typeIndex in 0...commands.length) {
 			
-			switch (type) {
+			switch (types[typeIndex]) {
 				
 				case CUBIC_CURVE_TO:
 					
@@ -1038,7 +1040,7 @@ class CanvasGraphics {
 				
 				default:
 					
-					data.skip (type);
+					data.skip (types[typeIndex]);
 				
 			}
 			
@@ -1321,13 +1323,13 @@ class CanvasGraphics {
 							endFill ();
 							endStroke ();
 							
-							if (type == BEGIN_BITMAP_FILL) {
+							if (types[typeIndex] == BEGIN_BITMAP_FILL) {
 								
 								var c = data.readBeginBitmapFill ();
 								fillCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 								strokeCommands.beginBitmapFill (c.bitmap, c.matrix, c.repeat, c.smooth);
 								
-							} else if (type == BEGIN_GRADIENT_FILL) {
+							} else if (types[typeIndex] == BEGIN_GRADIENT_FILL) {
 								
 								var c = data.readBeginGradientFill ();
 								fillCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
@@ -1404,7 +1406,7 @@ class CanvasGraphics {
 						
 						default:
 							
-							data.skip (type);
+							data.skip (types[typeIndex]);
 						
 					}
 					
@@ -1531,7 +1533,7 @@ class CanvasGraphics {
 					
 					default:
 						
-						data.skip (type);
+						data.skip (types[typeIndex]);
 					
 				}
 				
