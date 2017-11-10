@@ -30,6 +30,7 @@ class Shader {
 	public var glProgram (default, null):GLProgram;
 	public var glVertexSource (get, set):String;
 	public var precisionHint:ShaderPrecision;
+	public var versionDirective:Null<Int>;
 	
 	private var gl:GLRenderContext;
 	
@@ -297,6 +298,7 @@ class Shader {
 			
 			var fragment = 
 				
+				(versionDirective != null ? '#version $versionDirective\n' : "") +
 				"#ifdef GL_ES
 				precision " + (precisionHint == FULL ? "mediump" : "lowp") + " float;
 				#endif
