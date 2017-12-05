@@ -138,7 +138,7 @@ class Tile implements ITile {
 		
 		if (__colorTransformDirty || forceUpdate) {
 			
-			//tileArray.colorTransform = __colorTransform;
+			tileArray.colorTransform = __colorTransform;
 			__colorTransformDirty = false;
 			
 		}
