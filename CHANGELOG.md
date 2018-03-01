@@ -1,3 +1,186 @@
+7.1.2 (02/15/2018)
+------------------
+
+* Updated to Lime 6.2.*
+* Added support for ETC1+ETC1 compressed alpha textures in `Context3D`
+* Improved enum values on NPM builds to use `String` values
+* Improved `FileReference.save` to work on HTML5
+* Improved automatic horizontal scrolling in single-line input `TextField`
+* Fixed creation of automatic Docker builds for OpenFL releases
+* Fixed conversion from Lime `MouseCursor.RESIZE_NS` to OpenFL `MouseCursor`
+
+
+7.1.1 (02/09/2018)
+------------------
+
+* Improved the rendering of the `TextField` input cursor on HTML5
+* Fixed support for `openfl.Vector` when only part of the application is CommonJS
+* Fixed a possible crash if no native window is able to be initialized
+* Fixed a regression in "swf-loader" support within the NPM tools
+* Fixed a minor "unused variable" warning when building NPM tools
+
+
+7.1.0 (02/07/2018)
+------------------
+
+* Updated Lime to 6.1.*
+* Added support for `openfl.Vector` on NPM releases
+* Improved `TextField` input to work when `textField.selectable == false`
+* Improved `UncaughtErrorEvents` to catch closer to the triggered error
+* Improved the return value of `Capabilities.os`
+* Improved the returned value in `Capabilities.cpuArchitecture` on a simulator
+* Improved using `byteArray.length` on NPM releases
+* Improved support for old Adreno GPUs and certain Tegra GPUs
+* Improved GL depth buffer for `Stage3D` to be enabled by default on NPM builds
+* Fixed `ColorMatrixFilter` when using certain dark color values
+* Fixed adding mask children when using SWF-based `MovieClip` instances
+* Fixed the frequency of `Event.ENTER_FRAME` events on multiple HTML embeds
+* Fixed the use of `buttonMode` and custom mouse cursors on multiple embeds
+* Fixed `Capabilities.screenResolutionX`/`screenResolutionY` to be scaled
+* Fixed `stage.focus` when changing focus calls `stage.focus` again
+* Fixed minor type definition issues for TypeScript and NPM-based Haxe code
+* Fixed clearing graphics in `shape.graphics` on canvas renderer
+* Fixed the `x` and `y` of certain kinds of SWF-based `TextField` instances
+* Fixed support for `Context3D.setRenderToTexture` when GLESv3
+* Fixed the metrics of `TextField` objects with empty text
+
+
+7.0.0 (01/15/2018)
+------------------
+
+* Updated Lime to 6.0.*
+* Added initial release of OpenFL for NPM
+* Added TypeScript, ES6 JavaScript and ES5 JavaScript language support
+* Added `new Stage` support on NPM builds to initiate content
+* Added `sendToURL`, `navigateToURL` and `openfl.utils.*` top-level functions
+* Added support for using `URLVariables` with `navigateToURL`
+* Added `Font.loadFromBytes`, `Font.loadFromFile` and `Font.loadFromName`
+* Added initial implemention of `openfl.utils.AssetManifest`
+* Improved performance in GL `BitmapData` upload and changes to bitmap filters
+* Improved SWF processing tools to work with Node.js (used in `swf-loader`)
+* Improved support for consuming OpenFL as a JavaScript library
+* Improved handling of default HTTP timeout if `-Dlime-default-timeout` is set
+* Improved `tilemap.removeTile` ignore `null` tiles
+* Fixed support for use of many OpenFL classes and methods on Node.js
+* Fixed multi-line `TextField` to render cursor on correct line
+* Fixed `AssetLibrary.fromManifest` to up-cast if the result is a Lime library
+* Fixed `setTextFormat` so it does not remove links, if they exist
+* Fixed hit-testing objects when `!sprite.mouseEnabled` with children
+* Fixed support for support DOM rendering at runtime (no `-Ddom` required)
+* Fixed issue where setting `colorTransform` would not update properly
+
+
+6.5.3 (12/05/2017)
+------------------
+
+* Fixed a regression that caused an immediate runtime error on Flash Player
+
+
+6.5.2 (12/05/2017)
+------------------
+
+* Fixed issue where run script required Lime CFFI before Lime was installed
+* Fixed invalidation of `cacheAsBitmap` when `graphics` is dirty
+* Fixed a static initialization order issue in Canvas `graphics`
+* Fixed circular dependency issues in anticipation of ES5 module support
+
+
+6.5.1 (11/29/2017)
+------------------
+
+* Updated Lime to 5.9.*
+* Added support for improved CSS font embedding in Lime 5.9.0
+* Fixed support for rendering multiple masking levels in OpenGL masks
+* Fixed some issues with rendering masks with `cacheAsBitmap`
+* Fixed a possible crash in `TextField` and in `Loader`
+* Fixed the height offset when using `context3D.drawToBitmapData`
+* Fixed OpenGL rendering for masks with a different parent than the masked object
+* Fixed `ColorMatrixFilter` so that values are constrained between 0 and 255
+* Fixed a crash error on `textField.getCharBoundaries` when the char is not available
+
+
+6.5.0 (11/10/2017)
+------------------
+
+* Added initial support for OpenGL masking using stencil buffer
+* Added missing `ByteArray.loadFromBytes`/`ByteArray.loadFromFile` methods
+* Added initial support for switching within font families for `TextField` rendering
+* Fixed a regression in `graphics.drawTriangles` support on native
+* Fixed a case where `scrollH` updating in `TextField` could be one character off
+* Fixed a problem where two `TextField` instances could both receive input at once
+* Fixed measurement value of `textField.textHeight` when a field is empty
+* Fixed support for `<window color-depth="32" />` for HTML5 template
+
+
+6.4.0 (11/06/2017)
+------------------
+
+* Added initial support for compressed textures for Stage3D
+* Added support for `Ctrl`+`C`/`Cmd`+`C` copying from selectable `TextField`
+* Added initial auto `textField.scrollH` support on single-line input `TextField`
+* Improved `urlRequest.manageCookies` to default to `false` for better CORS behavior
+* Improved uncaught error event handling on HTML5
+* Improved support for `textField.restrict` and `maxChars`
+* Improved support for switching focus to/from multiple TextFields
+* Fixed the size of the cursor in `TextField` to be more consistent
+* Fixed `mouseEvent.buttonDown` to accurately reflect the state of the left button
+* Fixed `FullScreenEvent` to behave more consistently on HTML5
+* Fixed the coordinates used for `context3D.drawToBitmapData`
+
+
+6.3.0 (10/24/2017)
+------------------
+
+* Updated Lime to 5.8.*
+* Added capture phase support for all `DisplayObject` events
+* Added support for `tile.colorTransform` on Flash `Tilemap`
+* Added support for `URLRequest` `followRedirects` and `manageCookies`
+* Added support for `URLRequest` `idleTimeout` and `userAgent`
+* Improved the behavior of `sprite.hitArea` with children
+* Improved the `tabEnabled` and mouse focus behavior
+* Fixed `TileArray` when `tile.id` does not exist in `Tileset`
+* Fixed support for `tile.colorTransform` on OpenGL `Tilemap`
+* Fixed the removal of bitmap filters in `MovieClip` animation where needed
+* Fixed similar font name resolution to better ignore non-alphabetic characters
+* Fixed support for combining bitmap filters with `ColorTransform`
+* Fixed support for videos in mobile Safari
+* Fixed some issues when using the Java target
+* Fixed a regression in HTML5 `openfl.Vector` JSON stringification
+
+
+6.2.2 (10/12/2017)
+------------------
+
+* Fixed support for using static initialization with bitmap filters
+* Fixed world transform values when nesting `cacheAsBitmap` objects
+* Fixed the behavior of using `tilemap.addTile` multiple times with the same tile
+* Fixed the rendering of `Tilemap` using HTML5 -Ddom rendering
+* Fixed conversion of SWF assets if a SWF class name is not found
+
+
+6.2.1 (10/10/2017)
+------------------
+
+* Updated Lime to 5.7.*
+* Added initial Dockerfile script
+* Added initial support for ATF cubemap textures
+* Improved native `TextField` rendering to use native text layouts directly
+* Improved support for combining characters in native `TextField` rendering
+* Improved word-wrapping when the final character in a line is a space
+* Improved the performance of `cacheAsBitmap` objects significantly
+* Improved `Vector` to support `new Vector<Int>([1,2,3])` initialization
+* Fixed incorrect trimming of final line character when "\n" is used
+* Fixed the color order of `ColorMatrixFilter` on certain targets
+* Fixed the position of `graphics.drawTriangles` shape rendering
+* Fixed casting of `Vector<T>` to `Vector<Dynamic>` on C++ target
+* Fixed proper serialization of `openfl.Vector` on HTML5
+* Fixed setting of `byteArray.position` value if `byteArray.length` is smaller
+* Fixed `XMLSocket` to send `DataEvent` based on `String` message boundaries
+* Fixed some issues in `textField.setTextFormat`
+* Fixed the behavior of `context3D.setStencilActions` on OpenGL
+* Fixed minor build issues when using Haxe 4 prerelease builds
+
+
 6.2.0 (09/26/2017)
 ------------------
 
