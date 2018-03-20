@@ -954,7 +954,11 @@ import js.html.CanvasRenderingContext2D;
 		var data = new DrawCommandReader (__commands);
 		var path = null, stroke;
 		
-		for (type in __commands.types) {
+		var types = __commands.types;
+
+		for (typeIndex in 0...__commands.length) {
+
+			var type = types[typeIndex];
 			
 			switch (type) {
 				

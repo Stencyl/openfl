@@ -887,7 +887,11 @@ class ConsoleRenderer extends AbstractRenderer {
 
 		var r = new DrawCommandReader (graphics.__commands);
 
-		for (type in graphics.__commands.types) {
+		var types = graphics.__commands.types;
+
+		for (typeIndex in 0...graphics.__commands.length) {
+
+			var type = types[typeIndex];
 
 			switch (type) {
 

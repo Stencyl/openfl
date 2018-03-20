@@ -286,7 +286,11 @@ class CairoGraphics {
 			
 			var data = new DrawCommandReader (graphics.__commands);
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
+
+				var type = types[typeIndex];
 				
 				switch (type) {
 					
@@ -563,7 +567,11 @@ class CairoGraphics {
 		
 		var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym, r, g, b;
 		
-		for (type in commands.types) {
+		var types = commands.types;
+
+		for (typeIndex in 0...commands.length) {
+
+			var type = types[typeIndex];
 			
 			switch (type) {
 				
@@ -1321,7 +1329,11 @@ class CairoGraphics {
 			
 			var data = new DrawCommandReader (graphics.__commands);
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
+
+				var type = types[typeIndex];
 				
 				switch (type) {
 					
@@ -1596,7 +1608,11 @@ class CairoGraphics {
 			
 			var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym;
 			
-			for (type in graphics.__commands.types) {
+			var types = graphics.__commands.types;
+
+			for (typeIndex in 0...graphics.__commands.length) {
+
+				var type = types[typeIndex];
 				
 				switch (type) {
 					

@@ -38,25 +38,33 @@ class DrawCommandBuffer {
 	private var ii:Array<Array<Int>>;
 	private var o:Array<Dynamic>;
 	
+	private var t_i = 0;
+	private var b_i = 0;
+	private var f_i = 0;
+	private var ff_i = 0;
+	private var i_i = 0;
+	private var ii_i = 0;
+	private var o_i = 0;
+	
 	
 	public function new () {
 		
 		if (empty == null) {
 			
-			types = [];
+			types = new Array<DrawCommandType>();
 			
-			b = [];
-			i = [];
-			f = [];
-			o = [];
-			ff = [];
-			ii = [];
+			b = new Array<Bool>();
+			i = new Array<Int>();
+			f = new Array<Float>();
+			o = new Array<Dynamic>();
+			ff = new Array<Array<Float>>();
+			ii = new Array<Array<Int>>();
 			
 			copyOnWrite = true;
 			
 		} else {
 			
-			clear ();
+			__initFromEmpty ();
 			
 		}
 		
@@ -74,6 +82,13 @@ class DrawCommandBuffer {
 			this.o = other.o;
 			this.ff = other.ff;
 			this.ii = other.ii;
+			this.t_i = other.t_i;
+			this.b_i = other.b_i;
+			this.f_i = other.f_i;
+			this.ff_i = other.ff_i;
+			this.i_i = other.i_i;
+			this.ii_i = other.ii_i;
+			this.o_i = other.o_i;
 			this.copyOnWrite = other.copyOnWrite = true;
 			
 			return other;
@@ -123,11 +138,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_BITMAP_FILL);
-		o.push (bitmap);
-		o.push (matrix);
-		b.push (repeat);
-		b.push (smooth);
+		types[t_i++] = BEGIN_BITMAP_FILL;
+		o[o_i++] = bitmap;
+		o[o_i++] = matrix;
+		b[b_i++] = repeat;
+		b[b_i++] = smooth;
 		
 	}
 	
@@ -135,9 +150,9 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_FILL);
-		i.push (color);
-		f.push (alpha);
+		types[t_i++] = BEGIN_FILL;
+		i[i_i++] = color;
+		f[f_i++] = alpha;
 		
 	}
 	
@@ -146,15 +161,15 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_GRADIENT_FILL);
-		o.push (type);
-		ii.push (colors);
-		ff.push (alphas);
-		ii.push (ratios);
-		o.push (matrix);
-		o.push (spreadMethod);
-		o.push (interpolationMethod);
-		f.push (focalPointRatio);
+		types[t_i++] = BEGIN_GRADIENT_FILL;
+		o[o_i++] = type;
+		ii[ii_i++] = colors;
+		ff[ff_i++] = alphas;
+		ii[ii_i++] = ratios;
+		o[o_i++] = matrix;
+		o[o_i++] = spreadMethod;
+		o[o_i++] = interpolationMethod;
+		f[f_i++] = focalPointRatio;
 		
 	}
 	
@@ -163,24 +178,21 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_SHADER_FILL);
-		o.push (shaderBuffer);
+		types[t_i++] = BEGIN_SHADER_FILL;
+		o[o_i++] = shaderBuffer;
 		
 	}
 	
 	
 	public function clear ():Void {
 		
-		types = empty.types;
-		
-		b = empty.b;
-		i = empty.i;
-		f = empty.f;
-		o = empty.o;
-		ff = empty.ff;
-		ii = empty.ii;
-		
-		copyOnWrite = true;
+		t_i = 0;
+		b_i = 0;
+		f_i = 0;
+		ff_i = 0;
+		i_i = 0;
+		ii_i = 0;
+		o_i = 0;
 		
 	}
 	
@@ -198,13 +210,13 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (CUBIC_CURVE_TO);
-		f.push (controlX1);
-		f.push (controlY1);
-		f.push (controlX2);
-		f.push (controlY2);
-		f.push (anchorX);
-		f.push (anchorY);
+		types[t_i++] = CUBIC_CURVE_TO;
+		f[f_i++] = controlX1;
+		f[f_i++] = controlY1;
+		f[f_i++] = controlX2;
+		f[f_i++] = controlY2;
+		f[f_i++] = anchorX;
+		f[f_i++] = anchorY;
 		
 	}
 	
@@ -212,18 +224,16 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (CURVE_TO);
-		f.push (controlX);
-		f.push (controlY);
-		f.push (anchorX);
-		f.push (anchorY);
+		types[t_i++] = CURVE_TO;
+		f[f_i++] = controlX;
+		f[f_i++] = controlY;
+		f[f_i++] = anchorX;
+		f[f_i++] = anchorY;
 		
 	}
 	
 	
 	public function destroy ():Void {
-		
-		clear ();
 		
 		types = null;
 		
@@ -241,10 +251,10 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_CIRCLE);
-		f.push (x);
-		f.push (y);
-		f.push (radius);
+		types[t_i++] = DRAW_CIRCLE;
+		f[f_i++] = x;
+		f[f_i++] = y;
+		f[f_i++] = radius;
 		
 	}
 	
@@ -253,11 +263,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_ELLIPSE);
-		f.push (x);
-		f.push (y);
-		f.push (width);
-		f.push (height);
+		types[t_i++] = DRAW_ELLIPSE;
+		f[f_i++] = x;
+		f[f_i++] = y;
+		f[f_i++] = width;
+		f[f_i++] = height;
 		
 	}
 	
@@ -266,10 +276,10 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_QUADS);
-		o.push (rects);
-		o.push (indices);
-		o.push (transforms);
+		types[t_i++] = DRAW_QUADS;
+		o[o_i++] = rects;
+		o[o_i++] = indices;
+		o[o_i++] = transforms;
 		
 	}
 	
@@ -278,11 +288,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_RECT);
-		f.push (x);
-		f.push (y);
-		f.push (width);
-		f.push (height);
+		types[t_i++] = DRAW_RECT;
+		f[f_i++] = x;
+		f[f_i++] = y;
+		f[f_i++] = width;
+		f[f_i++] = height;
 		
 	}
 	
@@ -290,13 +300,13 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_ROUND_RECT);
-		f.push (x);
-		f.push (y);
-		f.push (width);
-		f.push (height);
-		f.push (ellipseWidth);
-		o.push (ellipseHeight);
+		types[t_i++] = DRAW_ROUND_RECT;
+		f[f_i++] = x;
+		f[f_i++] = y;
+		f[f_i++] = width;
+		f[f_i++] = height;
+		f[f_i++] = ellipseWidth;
+		o[o_i++] = ellipseHeight;
 		
 	}
 	
@@ -305,11 +315,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_TRIANGLES);
-		o.push (vertices);
-		o.push (indices);
-		o.push (uvtData);
-		o.push (culling);
+		types[t_i++] = DRAW_TRIANGLES;
+		o[o_i++] = vertices;
+		o[o_i++] = indices;
+		o[o_i++] = uvtData;
+		o[o_i++] = culling;
 		
 	}
 	
@@ -318,7 +328,7 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (END_FILL);
+		types[t_i++] = END_FILL;
 		
 	}
 	
@@ -327,11 +337,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_BITMAP_STYLE);
-		o.push (bitmap);
-		o.push (matrix);
-		b.push (repeat);
-		b.push (smooth);
+		types[t_i++] = LINE_BITMAP_STYLE;
+		o[o_i++] = bitmap;
+		o[o_i++] = matrix;
+		b[b_i++] = repeat;
+		b[b_i++] = smooth;
 		
 	}
 	
@@ -340,15 +350,15 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_GRADIENT_STYLE);
-		o.push (type);
-		ii.push (colors);
-		ff.push (alphas);
-		ii.push (ratios);
-		o.push (matrix);
-		o.push (spreadMethod);
-		o.push (interpolationMethod);
-		f.push (focalPointRatio);
+		types[t_i++] = LINE_GRADIENT_STYLE;
+		o[o_i++] = type;
+		ii[ii_i++] = colors;
+		ff[ff_i++] = alphas;
+		ii[ii_i++] = ratios;
+		o[o_i++] = matrix;
+		o[o_i++] = spreadMethod;
+		o[o_i++] = interpolationMethod;
+		f[f_i++] = focalPointRatio;
 		
 	}
 	
@@ -357,15 +367,15 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_STYLE);
-		o.push (thickness);
-		i.push (color);
-		f.push (alpha);
-		b.push (pixelHinting);
-		o.push (scaleMode);
-		o.push (caps);
-		o.push (joints);
-		f.push (miterLimit);
+		types[t_i++] = LINE_STYLE;
+		o[o_i++] = thickness;
+		i[i_i++] = color;
+		f[f_i++] = alpha;
+		b[b_i++] = pixelHinting;
+		o[o_i++] = scaleMode;
+		o[o_i++] = caps;
+		o[o_i++] = joints;
+		f[f_i++] = miterLimit;
 		
 	}
 	
@@ -374,9 +384,9 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_TO);
-		f.push (x);
-		f.push (y);
+		types[t_i++] = LINE_TO;
+		f[f_i++] = x;
+		f[f_i++] = y;
 		
 	}
 	
@@ -385,9 +395,9 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (MOVE_TO);
-		f.push (x);
-		f.push (y);
+		types[t_i++] = MOVE_TO;
+		f[f_i++] = x;
+		f[f_i++] = y;
 		
 	}
 	
@@ -415,8 +425,8 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (OVERRIDE_MATRIX);
-		o.push (matrix);
+		types[t_i++] = OVERRIDE_MATRIX;
+		o[o_i++] = matrix;
 		
 	}
 	
@@ -425,7 +435,7 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (WINDING_EVEN_ODD);
+		types[t_i++] = WINDING_EVEN_ODD;
 		
 	}
 	
@@ -434,7 +444,7 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (WINDING_NON_ZERO);
+		types[t_i++] = WINDING_NON_ZERO;
 		
 	}
 	
@@ -448,9 +458,24 @@ class DrawCommandBuffer {
 	
 	private function get_length ():Int {
 		
-		return types.length;
+		return t_i;
 		
 	}
 	
+	
+	private function __initFromEmpty ():Void {
+		
+		types = empty.types;
+		
+		b = empty.b;
+		i = empty.i;
+		f = empty.f;
+		o = empty.o;
+		ff = empty.ff;
+		ii = empty.ii;
+		
+		copyOnWrite = true;
+		
+	}
 	
 }
