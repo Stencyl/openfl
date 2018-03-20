@@ -7,12 +7,10 @@ import haxe.macro.Type;
 
 using haxe.macro.ExprTools;
 using haxe.macro.Tools;
+using haxe.macro.TypeTools;
 
 
 class ShaderMacro {
-	
-	
-	private static var defaultFields = new Map<String, Bool> ();
 	
 	
 	public static function build ():Array<Field> {
@@ -48,33 +46,39 @@ class ShaderMacro {
 			
 			var pos = Context.currentPos ();
 			var localClass = Context.getLocalClass ().get ();
-			
-			var isBaseClass = (localClass.name == "Shader" && localClass.pack.length == 2 && localClass.pack[0] == "openfl" && localClass.pack[1] == "display");
 			var superClass = localClass.superClass != null ? localClass.superClass.t.get () : null;
-			var definedData = (superClass != null && (superClass.name != "Shader" || superClass.pack.length != 2 || superClass.pack[0] != "openfl" || superClass.pack[1] != "display"));
 			
 			var shaderDataFields = new Array<Field> ();
-			var dataClassName;
-			var dataClassPack;
+			var uniqueFields = [];
 			
-			processFields (glVertexSource, "attribute", shaderDataFields, isBaseClass, pos);
-			processFields (glVertexSource, "uniform", shaderDataFields, isBaseClass, pos);
-			processFields (glFragmentSource, "uniform", shaderDataFields, isBaseClass, pos);
+			processFields (glVertexSource, "attribute", shaderDataFields, pos);
+			processFields (glVertexSource, "uniform", shaderDataFields, pos);
+			processFields (glFragmentSource, "uniform", shaderDataFields, pos);
 			
-			if (isBaseClass) {
-				
-				dataClassPack = [ "openfl", "display" ];
-				dataClassName = "ShaderData";
-				
-			} else if (shaderDataFields.length > 0) {
-				
-				// dataClassPack = localClass.pack;
-				dataClassPack = [ "openfl", "_generated" ];
+			if (shaderDataFields.length > 0) {
 				
 				var fieldNames = new Map<String, Bool> ();
-				var uniqueFields = [];
+				var parent;
 				
 				for (field in shaderDataFields) {
+					
+					parent = superClass;
+					
+					while (parent != null) {
+						
+						for (parentField in parent.fields.get ()) {
+							
+							if (parentField.name == field.name) {
+								
+								fieldNames.set (field.name, true);
+								
+							}
+							
+						}
+						
+						parent = parent.superClass != null ? parent.superClass.t.get () : null;
+						
+					}
 					
 					if (!fieldNames.exists (field.name)) {
 						
@@ -86,27 +90,7 @@ class ShaderMacro {
 					
 				}
 				
-				dataClassName = "_" + localClass.name + "_ShaderData";
-				
-				Context.defineType ({
-					
-					pos: pos,
-					pack: dataClassPack,
-					name: dataClassName,
-					kind: TDClass ({ pack: [ "openfl", "display" ], name: "ShaderData", params: [] }, null, false),
-					fields: uniqueFields,
-					params: [],
-					meta: [ { name: ":dox", params: [ macro hide ], pos: pos }, { name: ":noCompletion", pos: pos }, { name: ":hack", pos: pos } ]
-					
-				});
-				
-			} else {
-				
-				dataClassName = "_Shader_ShaderData";
-				
 			}
-			
-			var dataClassType = TPath ({ name: dataClassName, pack: dataClassPack, params: [] });
 			
 			for (field in fields) {
 				
@@ -133,7 +117,8 @@ class ShaderMacro {
 						
 						if (glVertexSource != null) block.unshift (macro if (__glVertexSource == null) __glVertexSource = $v{glVertexSource});
 						if (glFragmentSource != null) block.unshift (macro if (__glFragmentSource == null) __glFragmentSource = $v{glFragmentSource});
-						block.push (Context.parse ("__data = cast new " + dataClassPack.join (".") + "." + dataClassName + " (null)", pos));
+						block.push (Context.parse ("__isGenerated = true", pos));
+						block.push (Context.parse ("__initGL ()", pos));
 					
 					default:
 					
@@ -141,29 +126,7 @@ class ShaderMacro {
 				
 			}
 			
-			if (!isBaseClass && !definedData && Context.definedValue ("openfl_dynamic") == null) {
-				
-				// fields.push ({ name: "__data", access: [ APublic ], kind: FVar (TPath ({ name: dataClassName, pack: dataClassPack, params: [] }), Context.parse ("new " + dataClassPack.join (".") + "." + dataClassName + " (null)", pos)), doc: null, meta: [], pos: pos });
-				
-				var get_data = macro { 
-					
-					if (__glSourceDirty || __data == null) {
-						
-						__init ();
-						
-					}
-					
-					return cast __data;
-					
-				};
-				
-				fields.push ({ name: "get_data", access: [ APrivate ], kind: FFun({ args: [], expr: get_data, params: [], ret: dataClassType }), pos: pos });
-				fields.push ({ name: "set_data", access: [ APrivate ], kind: FFun({ args: [ { name: "value", type: dataClassType } ], expr: Context.parse ("return cast __data = value", pos), params: [], ret: dataClassType }), pos: pos });
-				fields.push ({ name: "data", access: [ APublic ], kind: FProp ("get", "set", dataClassType, null), doc: null, meta: [], pos: pos });
-				
-				//fields.push ({ kind: FProp ("get", "set", TPath ({ name: dataClassName, pack: dataClassPack, params: [] }), null), name: "data", doc: null, meta: [], access: [ APublic ], pos: Context.currentPos () });
-				
-			}
+			fields = fields.concat (uniqueFields);
 			
 		}
 		
@@ -172,7 +135,7 @@ class ShaderMacro {
 	}
 	
 	
-	private static function processFields (source:String, storageType:String, fields:Array<Field>, isBaseClass:Bool, pos:Position):Void {
+	private static function processFields (source:String, storageType:String, fields:Array<Field>, pos:Position):Void {
 		
 		if (source == null) return;
 		
@@ -195,18 +158,6 @@ class ShaderMacro {
 			
 			if (StringTools.startsWith (name, "gl_")) {
 				
-				continue;
-				
-			}
-			
-			if (isBaseClass) {
-				
-				defaultFields.set (name, true);
-				
-			} else if (defaultFields.exists (name)) {
-				
-				position = regex.matchedPos ();
-				lastMatch = position.pos + position.len;
 				continue;
 				
 			}

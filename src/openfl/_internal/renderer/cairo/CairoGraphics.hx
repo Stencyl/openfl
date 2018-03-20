@@ -13,8 +13,8 @@ import lime.math.Vector2;
 import openfl._internal.renderer.DrawCommandBuffer;
 import openfl._internal.renderer.DrawCommandReader;
 import openfl._internal.renderer.DrawCommandType;
-import openfl._internal.renderer.RenderSession;
 import openfl.display.BitmapData;
+import openfl.display.CairoRenderer;
 import openfl.display.CapsStyle;
 import openfl.display.DisplayObject;
 import openfl.display.GradientType;
@@ -62,6 +62,8 @@ class CairoGraphics {
 	private static var pendingMatrix:Matrix;
 	private static var strokeCommands:DrawCommandBuffer = new DrawCommandBuffer ();
 	private static var strokePattern:CairoPattern;
+	private static var tempMatrix3 = new Matrix3 ();
+	private static var worldAlpha:Float;
 	
 	
 	private static function closePath (strokeBefore:Bool = false):Void {
@@ -818,85 +820,90 @@ class CairoGraphics {
 				
 				case DRAW_QUADS:
 					
+					// TODO: Other fill types
+					
 					if (bitmapFill == null) continue;
 					
 					var cacheExtend = fillPattern.extend;
 					fillPattern.extend = CairoExtend.NONE;
 					
 					var c = data.readDrawQuads ();
-					var matrices = c.matrices;
-					var sourceRects = c.sourceRects;
-					var rectIndices = c.rectIndices;
-					var attributes = []; //c.attributes;
-					var attributeOptions = 0; //c.attributeOptions;
+					var rects = c.rects;
+					var indices = c.indices;
+					var transforms = c.transforms;
 					
-					var hasRect = (sourceRects != null);
-					var hasID = (hasRect && rectIndices != null);
-					// var hasAlpha = (attributeOptions & VertexAttribute.ALPHA) > 0;
-					// var hasColorTransform = (attributeOptions & VertexAttribute.COLOR_TRANSFORM) > 0;
-					var hasAlpha = false;
-					var hasColorTransform = false;
+					var hasIndices = (indices != null);
+					var transformABCD = false, transformXY = false;
 					
-					var attributeSize = 0;
-					var colorTransformOffset = 0;
+					var length = hasIndices ? indices.length : Math.floor (rects.length / 4);
+					if (length == 0) return;
 					
-					if (hasAlpha) {
+					if (transforms != null) {
 						
-						attributeSize++;
-						colorTransformOffset = 1;
-						
-					}
-					
-					if (hasColorTransform) attributeSize += 8;
-					
-					var rect = Rectangle.__pool.get ();
-					var tileTransform = Matrix.__pool.get ();
-					
-					var sourceRect = bitmapFill.rect;
-					
-					var transform = graphics.__renderTransform;
-					// var roundPixels = renderSession.roundPixels;
-					
-					var matrix = new Matrix3 ();
-					var alpha = 1.0, id;
-					var i4, i6, tileRect = null;
-					
-					var length = Math.floor (matrices.length / 6);
-					
-					for (i in 0...length) {
-						
-						if (hasAlpha) attributes[i * attributeSize];
-						else if (hasColorTransform) alpha = attributes[i * attributeSize + colorTransformOffset];
-						else alpha = 1.0;
-						
-						if (alpha <= 0) continue;
-						
-						if (hasRect) {
+						if (transforms.length >= length * 6) {
 							
-							if (hasID) {
-								
-								id = rectIndices[i];
-								if (id == -1) continue;
-								i4 = id * 4;
-								
-							} else {
-								
-								i4 = i * 4;
-								
-							}
+							transformABCD = true;
+							transformXY = true;
 							
-							rect.setTo (sourceRects[i4], sourceRects[i4 + 1], sourceRects[i4 + 2], sourceRects[i4 + 3]);
-							tileRect = rect;
+						} else if (transforms.length >= length * 4) {
 							
-						} else {
+							transformABCD = true;
 							
-							tileRect = sourceRect;
+						} else if (transforms.length >= length * 2) {
+							
+							transformXY = true;
 							
 						}
 						
-						i6 = i * 6;
+					}
+					
+					var tileRect = Rectangle.__pool.get ();
+					var tileTransform = Matrix.__pool.get ();
+					
+					var sourceRect = bitmapFill.rect;
+					tempMatrix3.identity ();
+					
+					var transform = graphics.__renderTransform;
+					// var roundPixels = renderer.__roundPixels;
+					var alpha = CairoGraphics.worldAlpha;
+					
+					var ri, ti;
+					
+					for (i in 0...length) {
 						
-						tileTransform.setTo (matrices[i6], matrices[i6 + 1], matrices[i6 + 2], matrices[i6 + 3], matrices[i6 + 4], matrices[i6 + 5]);
+						ri = (hasIndices ? (indices[i] * 4) : i * 4);
+						if (ri < 0) continue;
+						tileRect.setTo (rects[ri], rects[ri + 1], rects[ri + 2], rects[ri + 3]);
+						
+						if (tileRect.width <= 0 || tileRect.height <= 0) {
+							
+							continue;
+							
+						}
+						
+						if (transformABCD && transformXY) {
+							
+							ti = i * 6;
+							tileTransform.setTo (transforms[ti], transforms[ti + 1], transforms[ti + 2], transforms[ti + 3], transforms[ti + 4], transforms[ti + 5]);
+							
+						} else if (transformABCD) {
+							
+							ti = i * 4;
+							tileTransform.setTo (transforms[ti], transforms[ti + 1], transforms[ti + 2], transforms[ti + 3], tileRect.x, tileRect.y);
+							
+						} else if (transformXY) {
+							
+							ti = i * 2;
+							tileTransform.tx = transforms[ti];
+							tileTransform.ty = transforms[ti + 1];
+							
+						} else {
+							
+							tileTransform.tx = tileRect.x;
+							tileTransform.ty = tileRect.y;
+							
+						}
+						
 						tileTransform.tx += positionX - offsetX;
 						tileTransform.ty += positionY - offsetY;
 						tileTransform.concat (transform);
@@ -910,9 +917,9 @@ class CairoGraphics {
 						
 						cairo.matrix = tileTransform.__toMatrix3 ();
 						
-						matrix.tx = tileRect.x;
-						matrix.ty = tileRect.y;
-						fillPattern.matrix = matrix;
+						tempMatrix3.tx = tileRect.x;
+						tempMatrix3.ty = tileRect.y;
+						fillPattern.matrix = tempMatrix3;
 						cairo.source = fillPattern;
 						
 						if (tileRect != sourceRect) {
@@ -947,7 +954,7 @@ class CairoGraphics {
 						
 					}
 					
-					Rectangle.__pool.release (rect);
+					Rectangle.__pool.release (tileRect);
 					Matrix.__pool.release (tileTransform);
 					
 					cairo.matrix = graphics.__renderTransform.__toMatrix3 ();
@@ -1017,8 +1024,6 @@ class CairoGraphics {
 					var denom:Float;
 					var t1:Float, t2:Float, t3:Float, t4:Float;
 					var dx:Float, dy:Float;
-					
-					var matrix = new Matrix3 ();
 					
 					cairo.antialias = NONE;
 					
@@ -1120,14 +1125,16 @@ class CairoGraphics {
 						dx = (uvx1 * (uvy3 * x2 - uvy2 * x3) + uvy1 * (uvx2 * x3 - uvx3 * x2) + (uvx3 * uvy2 - uvx2 * uvy3) * x1) / denom;
 						dy = (uvx1 * (uvy3 * y2 - uvy2 * y3) + uvy1 * (uvx2 * y3 - uvx3 * y2) + (uvx3 * uvy2 - uvx2 * uvy3) * y1) / denom;
 						
-						matrix.setTo (t1, t2, t3, t4, dx, dy);
-						cairo.matrix = matrix;
+						tempMatrix3.setTo (t1, t2, t3, t4, dx, dy);
+						cairo.matrix = tempMatrix3;
 						cairo.source = fillPattern;
 						if (!hitTesting) cairo.fill ();
 						
 						i += 3;
 						
 					}
+					
+					cairo.matrix = graphics.__renderTransform.__toMatrix3 ();
 				
 				case WINDING_EVEN_ODD:
 					
@@ -1241,12 +1248,13 @@ class CairoGraphics {
 	#end
 	
 	
-	public static function render (graphics:Graphics, renderSession:RenderSession, parentTransform:Matrix):Void {
+	public static function render (graphics:Graphics, renderer:CairoRenderer):Void {
 		
 		#if lime_cairo
 		
 		CairoGraphics.graphics = graphics;
-		CairoGraphics.allowSmoothing = renderSession.allowSmoothing;
+		CairoGraphics.allowSmoothing = renderer.__allowSmoothing;
+		CairoGraphics.worldAlpha = renderer.__getAlpha (graphics.__owner.__worldAlpha);
 		graphics.__update ();
 		
 		if (!graphics.__dirty || graphics.__managed) return;
@@ -1291,7 +1299,8 @@ class CairoGraphics {
 			}
 			
 			cairo = graphics.__cairo;
-			cairo.matrix = graphics.__renderTransform.__toMatrix3 ();
+			
+			renderer.applyMatrix (graphics.__renderTransform, cairo);
 			
 			cairo.operator = CLEAR;
 			cairo.paint ();
@@ -1518,7 +1527,7 @@ class CairoGraphics {
 					case DRAW_QUADS:
 						
 						var c = data.readDrawQuads ();
-						fillCommands.drawQuads (c.matrices, c.sourceRects, c.rectIndices);
+						fillCommands.drawQuads (c.rects, c.indices, c.transforms);
 					
 					case DRAW_TRIANGLES:
 						
@@ -1569,13 +1578,13 @@ class CairoGraphics {
 	}
 	
 	
-	public static function renderMask (graphics:Graphics, renderSession:RenderSession) {
+	public static function renderMask (graphics:Graphics, renderer:CairoRenderer) {
 		
 		#if lime_cairo
 		
 		if (graphics.__commands.length != 0) {
 			
-			var cairo = renderSession.cairo;
+			var cairo = renderer.cairo;
 			
 			var positionX = 0.0;
 			var positionY = 0.0;
@@ -1583,7 +1592,7 @@ class CairoGraphics {
 			var offsetX = 0;
 			var offsetY = 0;
 			
-			var data = new DrawCommandReader(graphics.__commands);
+			var data = new DrawCommandReader (graphics.__commands);
 			
 			var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym;
 			
@@ -1670,7 +1679,8 @@ class CairoGraphics {
 				
 			}
 			
-			data.destroy();
+			data.destroy ();
+			
 		}
 		
 		#end

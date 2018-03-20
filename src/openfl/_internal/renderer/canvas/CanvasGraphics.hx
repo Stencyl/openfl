@@ -1,9 +1,9 @@
 package openfl._internal.renderer.canvas;
 
 import lime.graphics.utils.ImageCanvasUtil;
-import openfl._internal.renderer.RenderSession;
 import openfl.display.BitmapData;
 import openfl.display.BitmapDataChannel;
+import openfl.display.CanvasRenderer;
 import openfl.display.CapsStyle;
 import openfl.display.DisplayObject;
 import openfl._internal.renderer.DrawCommandBuffer;
@@ -34,6 +34,7 @@ import js.html.ImageData;
 @:access(openfl.display.Graphics)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Point)
+@:access(openfl.geom.Rectangle)
 
 
 class CanvasGraphics {
@@ -390,7 +391,7 @@ class CanvasGraphics {
 						hasFill = false;
 						bitmapFill = null;
 					
-					case BEGIN_BITMAP_FILL, BEGIN_FILL, BEGIN_GRADIENT_FILL:
+					case BEGIN_BITMAP_FILL, BEGIN_FILL, BEGIN_GRADIENT_FILL, BEGIN_SHADER_FILL:
 						
 						endFill ();
 						
@@ -425,6 +426,12 @@ class CanvasGraphics {
 							var c = data.readBeginGradientFill ();
 							fillCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
 							strokeCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
+							
+						} else if (type == BEGIN_SHADER_FILL) {
+							
+							var c = data.readBeginShaderFill ();
+							fillCommands.beginShaderFill (c.shaderBuffer);
+							strokeCommands.beginShaderFill (c.shaderBuffer);
 							
 						} else {
 							
@@ -762,7 +769,7 @@ class CanvasGraphics {
 					
 					var c = data.readBeginBitmapFill ();
 					bitmapFill = c.bitmap;
-					context.fillStyle = createBitmapFill (c.bitmap, true, c.smooth);
+					context.fillStyle = createBitmapFill (c.bitmap, c.repeat, c.smooth);
 					hasFill = true;
 					
 					if (c.matrix != null) {
@@ -815,6 +822,127 @@ class CanvasGraphics {
 					bitmapFill = null;
 					setSmoothing (true);
 					hasFill = true;
+				
+				case BEGIN_SHADER_FILL:
+					
+					var c = data.readBeginShaderFill ();
+					var shaderBuffer = c.shaderBuffer;
+					
+					if (shaderBuffer.inputCount > 0) {
+						
+						bitmapFill = shaderBuffer.inputs[0];
+						context.fillStyle = createBitmapFill (bitmapFill, false, shaderBuffer.inputSmoothing[0]);
+						hasFill = true;
+						
+						pendingMatrix = null;
+						inversePendingMatrix = null;
+						
+					}
+				
+				case DRAW_QUADS:
+					
+					// TODO: Other fill types
+					
+					if (bitmapFill == null) continue;
+					
+					var c = data.readDrawQuads ();
+					var rects = c.rects;
+					var indices = c.indices;
+					var transforms = c.transforms;
+					
+					var hasIndices = (indices != null);
+					var transformABCD = false, transformXY = false;
+					
+					var length = hasIndices ? indices.length : Math.floor (rects.length / 4);
+					if (length == 0) return;
+					
+					if (transforms != null) {
+						
+						if (transforms.length >= length * 6) {
+							
+							transformABCD = true;
+							transformXY = true;
+							
+						} else if (transforms.length >= length * 4) {
+							
+							transformABCD = true;
+							
+						} else if (transforms.length >= length * 2) {
+							
+							transformXY = true;
+							
+						}
+						
+					}
+					
+					var tileRect = Rectangle.__pool.get ();
+					var tileTransform = Matrix.__pool.get ();
+					
+					var sourceRect = bitmapFill.rect;
+					
+					var transform = graphics.__renderTransform;
+					// var roundPixels = renderer.__roundPixels;
+					var alpha = graphics.__owner.__worldAlpha;
+					
+					var ri, ti;
+					
+					context.save (); // TODO: Restore transform without save/restore
+					
+					for (i in 0...length) {
+						
+						ri = (hasIndices ? (indices[i] * 4) : i * 4);
+						if (ri < 0) continue;
+						tileRect.setTo (rects[ri], rects[ri + 1], rects[ri + 2], rects[ri + 3]);
+						
+						if (tileRect.width <= 0 || tileRect.height <= 0) {
+							
+							continue;
+							
+						}
+						
+						if (transformABCD && transformXY) {
+							
+							ti = i * 6;
+							tileTransform.setTo (transforms[ti], transforms[ti + 1], transforms[ti + 2], transforms[ti + 3], transforms[ti + 4], transforms[ti + 5]);
+							
+						} else if (transformABCD) {
+							
+							ti = i * 4;
+							tileTransform.setTo (transforms[ti], transforms[ti + 1], transforms[ti + 2], transforms[ti + 3], tileRect.x, tileRect.y);
+							
+						} else if (transformXY) {
+							
+							ti = i * 2;
+							tileTransform.tx = transforms[ti];
+							tileTransform.ty = transforms[ti + 1];
+							
+						} else {
+							
+							tileTransform.tx = tileRect.x;
+							tileTransform.ty = tileRect.y;
+							
+						}
+						
+						tileTransform.tx += positionX - offsetX;
+						tileTransform.ty += positionY - offsetY;
+						tileTransform.concat (transform);
+						
+						// if (roundPixels) {
+							
+						// 	tileTransform.tx = Math.round (tileTransform.tx);
+						// 	tileTransform.ty = Math.round (tileTransform.ty);
+							
+						// }
+						
+						context.setTransform (tileTransform.a, tileTransform.b, tileTransform.c, tileTransform.d, tileTransform.tx, tileTransform.ty);
+						context.drawImage (bitmapFill.image.src, tileRect.x, tileRect.y, tileRect.width, tileRect.height, 0, 0, tileRect.width, tileRect.height);
+						
+					}
+					
+					Rectangle.__pool.release (tileRect);
+					Matrix.__pool.release (tileTransform);
+					
+					context.restore ();
 				
 				case DRAW_TRIANGLES:
 					
@@ -968,7 +1096,7 @@ class CanvasGraphics {
 						dy = (uvx1 * (uvy3 * y2 - uvy2 * y3) + uvy1 * (uvx2 * y3 - uvx3 * y2) + (uvx3 * uvy2 - uvx2 * uvy3) * y1) / denom;
 						
 						context.transform (t1, t2, t3, t4, dx, dy);
-						context.drawImage (pattern, 0, 0);
+						context.drawImage (pattern, 0, 0, pattern.width, pattern.height);
 						context.restore ();
 						
 						i += 3;
@@ -1109,7 +1237,7 @@ class CanvasGraphics {
 	}
 	
 	
-	public static function render (graphics:Graphics, renderSession:RenderSession, parentTransform:Matrix):Void {
+	public static function render (graphics:Graphics, renderer:CanvasRenderer):Void {
 		
 		#if (js && html5)
 		
@@ -1120,7 +1248,7 @@ class CanvasGraphics {
 			hitTesting = false;
 			
 			CanvasGraphics.graphics = graphics;
-			CanvasGraphics.allowSmoothing = renderSession.allowSmoothing;
+			CanvasGraphics.allowSmoothing = renderer.__allowSmoothing;
 			bounds = graphics.__bounds;
 			
 			var width = graphics.__width;
@@ -1145,11 +1273,11 @@ class CanvasGraphics {
 				var transform = graphics.__renderTransform;
 				var canvas = graphics.__canvas;
 				
-				var scale = CanvasRenderer.scale;
+				var scale = renderer.pixelRatio;
 				var scaledWidth = Std.int (width * scale);
 				var scaledHeight = Std.int (height * scale);
 				
-				if (renderSession.renderType == DOM) {
+				if (renderer.__isDOM) {
 					
 					if (canvas.width == scaledWidth && canvas.height == scaledHeight) {
 						
@@ -1330,7 +1458,7 @@ class CanvasGraphics {
 							hasLineStyle = c.thickness != null;
 							strokeCommands.lineStyle (c.thickness, c.color, c.alpha, c.pixelHinting, c.scaleMode, c.caps, c.joints, c.miterLimit);
 						
-						case BEGIN_BITMAP_FILL, BEGIN_FILL, BEGIN_GRADIENT_FILL:
+						case BEGIN_BITMAP_FILL, BEGIN_FILL, BEGIN_GRADIENT_FILL, BEGIN_SHADER_FILL:
 							
 							endFill ();
 							endStroke ();
@@ -1346,6 +1474,12 @@ class CanvasGraphics {
 								var c = data.readBeginGradientFill ();
 								fillCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
 								strokeCommands.beginGradientFill (c.type, c.colors, c.alphas, c.ratios, c.matrix, c.spreadMethod, c.interpolationMethod, c.focalPointRatio);
+								
+							} else if (type == BEGIN_SHADER_FILL) {
+								
+								var c = data.readBeginShaderFill ();
+								fillCommands.beginShaderFill (c.shaderBuffer);
+								strokeCommands.beginShaderFill (c.shaderBuffer);
 								
 							} else {
 								
@@ -1399,6 +1533,11 @@ class CanvasGraphics {
 								
 							}
 						
+						case DRAW_QUADS:
+							
+							var c = data.readDrawQuads ();
+							fillCommands.drawQuads (c.rects, c.indices, c.transforms);
+						
 						case DRAW_TRIANGLES:
 							
 							var c = data.readDrawTriangles ();
@@ -1450,13 +1589,16 @@ class CanvasGraphics {
 	}
 	
 	
-	public static function renderMask (graphics:Graphics, renderSession:RenderSession) {
+	public static function renderMask (graphics:Graphics, renderer:CanvasRenderer) {
 		
 		#if (js && html5)
 		
+		// TODO: Move to normal render method, browsers appear to support more than
+		// one path in clipping now
+		
 		if (graphics.__commands.length != 0) {
 			
-			context = cast renderSession.context;
+			context = cast renderer.context;
 			
 			var positionX = 0.0;
 			var positionY = 0.0;
@@ -1520,7 +1662,9 @@ class CanvasGraphics {
 					case DRAW_RECT:
 						
 						var c = data.readDrawRect ();
+						context.beginPath ();
 						context.rect (c.x - offsetX, c.y - offsetY, c.width, c.height);
+						context.closePath ();
 					
 					case DRAW_ROUND_RECT:
 						

@@ -54,7 +54,6 @@ import js.html.CanvasRenderingContext2D;
 	private var __bounds:Rectangle;
 	private var __buffer:GLBuffer;
 	private var __bufferContext:GLRenderContext;
-	private var __bufferDirty:Bool;
 	private var __bufferData:Float32Array;
 	private var __bufferLength:Int;
 	private var __commands:DrawCommandBuffer;
@@ -156,7 +155,7 @@ import js.html.CanvasRenderingContext2D;
 		
 		if (shader != null) {
 			
-			__bitmapFill = shader.data.texture0.input;
+			__bitmapFill = shader.texture0.input;
 			
 		}
 		
@@ -448,7 +447,7 @@ import js.html.CanvasRenderingContext2D;
 				case QUAD_PATH:
 					
 					quadPath = cast graphics;
-					drawQuads (quadPath.matrices, quadPath.sourceRects, quadPath.rectIndices);
+					drawQuads (quadPath.rects, quadPath.indices, quadPath.transforms);
 				
 			}
 			
@@ -509,61 +508,99 @@ import js.html.CanvasRenderingContext2D;
 	}
 	
 	
-	public function drawQuads (matrices:Vector<Float>, sourceRects:Vector<Float> = null, rectIndices:Vector<Int> = null):Void {
+	public function drawQuads (rects:Vector<Float>, indices:Vector<Int> = null, transforms:Vector<Float> = null):Void {
 		
-		if (matrices == null || __bitmapFill == null) return;
+		if (rects == null || __bitmapFill == null) return;
 		
-		var hasRects = (sourceRects != null);
-		var hasIDs = (rectIndices != null);
+		var hasIndices = (indices != null);
+		var transformABCD = false, transformXY = false;
 		
-		var rect = Rectangle.__pool.get ();
-		var matrix = Matrix.__pool.get ();
-		
-		var length = Math.floor (matrices.length / 6);
+		var length = hasIndices ? indices.length : Math.floor (rects.length / 4);
 		if (length == 0) return;
 		
-		var i4, i6;
+		if (transforms != null) {
+			
+			if (transforms.length >= length * 6) {
+				
+				transformABCD = true;
+				transformXY = true;
+				
+			} else if (transforms.length >= length * 4) {
+				
+				transformABCD = true;
+				
+			} else if (transforms.length >= length * 2) {
+				
+				transformXY = true;
+				
+			}
+			
+		}
+		
+		var tileRect = Rectangle.__pool.get ();
+		var tileTransform = Matrix.__pool.get ();
 		
 		var minX = Math.POSITIVE_INFINITY;
 		var minY = Math.POSITIVE_INFINITY;
 		var maxX = Math.NEGATIVE_INFINITY;
 		var maxY = Math.NEGATIVE_INFINITY;
 		
+		var ri, ti;
+		
 		for (i in 0...length) {
 			
-			i6 = i * 6;
-			matrix.setTo (matrices[i6], matrices[i6 + 1], matrices[i6 + 2], matrices[i6 + 3], matrices[i6 + 4], matrices[i6 + 5]);
+			ri = (hasIndices ? (indices[i] * 4) : i * 4);
+			if (ri < 0) continue;
+			tileRect.setTo (rects[ri], rects[ri + 1], rects[ri + 2], rects[ri + 3]);
 			
-			if (hasRects) {
+			if (tileRect.width <= 0 || tileRect.height <= 0) {
 				
-				i4 = (hasIDs ? (rectIndices[i] * 4) : i * 4);
-				rect.setTo (sourceRects[i4], sourceRects[i4 + 1], sourceRects[i4 + 2], sourceRects[i4 + 3]);
-				
-			} else {
-				
-				rect.setTo (0, 0, __bitmapFill.width, __bitmapFill.height);
+				continue;
 				
 			}
 			
-			rect.__transform (rect, matrix);
+			if (transformABCD && transformXY) {
+				
+				ti = i * 6;
+				tileTransform.setTo (transforms[ti], transforms[ti + 1], transforms[ti + 2], transforms[ti + 3], transforms[ti + 4], transforms[ti + 5]);
+				
+			} else if (transformABCD) {
+				
+				ti = i * 4;
+				tileTransform.setTo (transforms[ti], transforms[ti + 1], transforms[ti + 2], transforms[ti + 3], tileRect.x, tileRect.y);
+				
+			} else if (transformXY) {
+				
+				ti = i * 2;
+				tileTransform.tx = transforms[ti];
+				tileTransform.ty = transforms[ti + 1];
+				
+			} else {
+				
+				tileTransform.tx = tileRect.x;
+				tileTransform.ty = tileRect.y;
+				
+			}
 			
-			if (minX > rect.x) minX = rect.x;
-			if (minY > rect.y) minY = rect.y;
-			if (maxX < rect.right) maxX = rect.right;
-			if (maxY < rect.bottom) maxY = rect.bottom;
+			tileRect.__transform (tileRect, tileTransform);
+			
+			if (minX > tileRect.x) minX = tileRect.x;
+			if (minY > tileRect.y) minY = tileRect.y;
+			if (maxX < tileRect.right) maxX = tileRect.right;
+			if (maxY < tileRect.bottom) maxY = tileRect.bottom;
 			
 		}
 		
 		__inflateBounds (minX, minY);
 		__inflateBounds (maxX, maxY);
 		
-		__commands.drawQuads (matrices, sourceRects, rectIndices);
+		__commands.drawQuads (rects, indices, transforms);
 		
 		__dirty = true;
 		__visible = true;
 		
-		Rectangle.__pool.release (rect);
-		Matrix.__pool.release (matrix);
+		Rectangle.__pool.release (tileRect);
+		Matrix.__pool.release (tileTransform);
 		
 	}
 	
@@ -646,19 +683,15 @@ import js.html.CanvasRenderingContext2D;
 	
 	public function drawTriangles (vertices:Vector<Float>, indices:Vector<Int> = null, uvtData:Vector<Float> = null, culling:TriangleCulling = TriangleCulling.NONE):Void {
 		
-		if (vertices == null) return;
+		if (vertices == null || vertices.length == 0) return;
 		
-		var vlen = Std.int (vertices.length / 2);
-		
-		if (culling == null) {
-			
-			culling = NONE;
-			
-		}
+		var vertLength = Std.int (vertices.length / 2);
 		
 		if (indices == null) {
 			
-			if (vlen % 3 != 0) {
+			// TODO: Allow null indices
+			
+			if (vertLength % 3 != 0) {
 				
 				throw new ArgumentError ("Not enough vertices to close a triangle.");
 				
@@ -666,7 +699,7 @@ import js.html.CanvasRenderingContext2D;
 			
 			indices = new Vector<Int> ();
 			
-			for (i in 0...vlen) {
+			for (i in 0...vertLength) {
 				
 				indices.push (i);
 				
@@ -674,23 +707,33 @@ import js.html.CanvasRenderingContext2D;
 			
 		}
 		
-		__inflateBounds (0, 0);
-		
-		var tmpx = Math.NEGATIVE_INFINITY;
-		var tmpy = Math.NEGATIVE_INFINITY;
-		var maxX = Math.NEGATIVE_INFINITY;
-		var maxY = Math.NEGATIVE_INFINITY;
-		
-		for (i in 0...vlen) {
+		if (culling == null) {
 			
-			tmpx = vertices[i * 2];
-			tmpy = vertices[i * 2 + 1];
-			if (maxX < tmpx) maxX = tmpx;
-			if (maxY < tmpy) maxY = tmpy;
+			culling = NONE;
 			
 		}
 		
+		var x, y;
+		var minX = Math.POSITIVE_INFINITY;
+		var minY = Math.POSITIVE_INFINITY;
+		var maxX = Math.NEGATIVE_INFINITY;
+		var maxY = Math.NEGATIVE_INFINITY;
+		
+		for (i in 0...vertLength) {
+			
+			x = vertices[i * 2];
+			y = vertices[i * 2 + 1];
+			
+			if (minX > x) minX = x;
+			if (minY > y) minY = y;
+			if (maxX < x) maxX = x;
+			if (maxY < y) maxY = y;
+			
+		}
+		
+		__inflateBounds (minX, minY);
 		__inflateBounds (maxX, maxY);
+		
 		__commands.drawTriangles (vertices, indices, uvtData, culling);
 		
 		__dirty = true;
