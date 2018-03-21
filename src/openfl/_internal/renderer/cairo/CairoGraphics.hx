@@ -1267,6 +1267,8 @@ class CairoGraphics {
 		
 		if (!graphics.__dirty || graphics.__managed) return;
 		
+		if (!graphics.__commands.dirty) return;
+		
 		bounds = graphics.__bounds;
 		
 		var width = graphics.__width;
@@ -1584,6 +1586,7 @@ class CairoGraphics {
 		}
 		
 		graphics.__dirty = false;
+		graphics.__commands.markAsClean();
 		
 		#end
 		
