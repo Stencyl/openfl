@@ -521,14 +521,14 @@ class DrawCommandBuffer {
 		if(!__dirty && (i >= a.length || a[i] != t))
 		{
 			__dirty = true;
-			if(i >= a.length)
+			/*if(i >= a.length)
 			{
 				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
 			}
 			else
 			{
 				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
-			}
+			}*/
 		}
 		a[i] = t;
 		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
@@ -539,14 +539,14 @@ class DrawCommandBuffer {
 		if(!__dirty && (i >= a.length || !t.equals(cast a[i])))
 		{
 			__dirty = true;
-			if(i >= a.length)
+			/*if(i >= a.length)
 			{
 				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
 			}
 			else
 			{
 				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
-			}
+			}*/
 		}
 		a[i] = t;
 		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
@@ -557,14 +557,14 @@ class DrawCommandBuffer {
 		if(!__dirty && (i >= a.length || t != a[i] || t.image.version != objVersions[i]))
 		{
 			__dirty = true;
-			if(i >= a.length)
+			/*if(i >= a.length)
 			{
 				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
 			}
 			else
 			{
 				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
-			}
+			}*/
 		}
 		a[i] = t;
 		
