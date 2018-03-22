@@ -47,6 +47,8 @@ class DrawCommandBuffer {
 	private var ii_i = 0;
 	private var o_i = 0;
 	
+	private var objVersions:Array<Int>;
+	
 	private var __dirty:Bool = true;
 	
 	public function new () {
@@ -61,6 +63,8 @@ class DrawCommandBuffer {
 			o = new Array<Dynamic>();
 			ff = new Array<Array<Float>>();
 			ii = new Array<Array<Int>>();
+			
+			objVersions = new Array<Int>();
 			
 			copyOnWrite = true;
 			
@@ -91,6 +95,7 @@ class DrawCommandBuffer {
 			this.i_i = other.i_i;
 			this.ii_i = other.ii_i;
 			this.o_i = other.o_i;
+			this.objVersions = other.objVersions;
 			this.copyOnWrite = other.copyOnWrite = true;
 			
 			return other;
@@ -141,7 +146,7 @@ class DrawCommandBuffer {
 		prepareWrite ();
 		
 		__replace(types, t_i++, BEGIN_BITMAP_FILL);
-		__replace(o, o_i++, bitmap);
+		__replaceBmp(o, o_i++, bitmap);
 		__replaceMtx(o, o_i++, matrix);
 		__replace(b, b_i++, repeat);
 		__replace(b, b_i++, smooth);
@@ -346,7 +351,7 @@ class DrawCommandBuffer {
 		prepareWrite ();
 		
 		__replace(types, t_i++, LINE_BITMAP_STYLE);
-		__replace(o, o_i++, bitmap);
+		__replaceBmp(o, o_i++, bitmap);
 		__replaceMtx(o, o_i++, matrix);
 		__replace(b, b_i++, repeat);
 		__replace(b, b_i++, smooth);
@@ -435,6 +440,7 @@ class DrawCommandBuffer {
 			o = o.copy ();
 			ff = ff.copy ();
 			ii = ii.copy ();
+			objVersions = objVersions.copy();
 			
 			copyOnWrite = false;
 			
@@ -502,6 +508,7 @@ class DrawCommandBuffer {
 		o = empty.o;
 		ff = empty.ff;
 		ii = empty.ii;
+		objVersions = empty.objVersions;
 		
 		copyOnWrite = true;
 		
@@ -542,6 +549,28 @@ class DrawCommandBuffer {
 			}
 		}
 		a[i] = t;
+		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+	}
+	
+	private inline function __replaceBmp(a:Array<Dynamic>, i:Int, t:BitmapData):Void
+	{
+		if(!__dirty && (i >= a.length || t != a[i] || t.image.version != objVersions[i]))
+		{
+			__dirty = true;
+			if(i >= a.length)
+			{
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+			}
+			else
+			{
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
+			}
+		}
+		a[i] = t;
+		
+		while(objVersions.length < i) objVersions.push(0);
+		objVersions[i] = t.image.version;
+		
 		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
 	}
 	
