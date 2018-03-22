@@ -2501,6 +2501,7 @@ class TextField extends InteractiveObject {
 			}
 			
 			__dirty = true;
+			__layoutDirty = true;
 			__setRenderDirty ();
 			
 		}
@@ -2884,6 +2885,8 @@ class TextField extends InteractiveObject {
 			
 			case DOWN:
 				
+				if (!__textEngine.multiline) return;
+				
 				if (modifier.shiftKey) {
 					
 					__caretNextLine ();
@@ -2909,6 +2912,8 @@ class TextField extends InteractiveObject {
 				__startCursorTimer ();
 			
 			case UP:
+				
+				if (!__textEngine.multiline) return;
 				
 				if (modifier.shiftKey) {
 					
