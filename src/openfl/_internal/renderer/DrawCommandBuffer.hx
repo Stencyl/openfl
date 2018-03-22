@@ -27,6 +27,7 @@ class DrawCommandBuffer {
 	
 	private static var empty:DrawCommandBuffer = new DrawCommandBuffer ();
 	
+	public var dirty (get, null):Bool;
 	public var length (get, never):Int; 
 	public var types:Array<DrawCommandType>;
 	
@@ -38,25 +39,38 @@ class DrawCommandBuffer {
 	private var ii:Array<Array<Int>>;
 	private var o:Array<Dynamic>;
 	
+	private var t_i = 0;
+	private var b_i = 0;
+	private var f_i = 0;
+	private var ff_i = 0;
+	private var i_i = 0;
+	private var ii_i = 0;
+	private var o_i = 0;
+	
+	private var objVersions:Array<Int>;
+	
+	private var __dirty:Bool = true;
 	
 	public function new () {
 		
 		if (empty == null) {
 			
-			types = [];
+			types = new Array<DrawCommandType>();
 			
-			b = [];
-			i = [];
-			f = [];
-			o = [];
-			ff = [];
-			ii = [];
+			b = new Array<Bool>();
+			i = new Array<Int>();
+			f = new Array<Float>();
+			o = new Array<Dynamic>();
+			ff = new Array<Array<Float>>();
+			ii = new Array<Array<Int>>();
+			
+			objVersions = new Array<Int>();
 			
 			copyOnWrite = true;
 			
 		} else {
 			
-			clear ();
+			__initFromEmpty ();
 			
 		}
 		
@@ -74,6 +88,14 @@ class DrawCommandBuffer {
 			this.o = other.o;
 			this.ff = other.ff;
 			this.ii = other.ii;
+			this.t_i = other.t_i;
+			this.b_i = other.b_i;
+			this.f_i = other.f_i;
+			this.ff_i = other.ff_i;
+			this.i_i = other.i_i;
+			this.ii_i = other.ii_i;
+			this.o_i = other.o_i;
+			this.objVersions = other.objVersions;
 			this.copyOnWrite = other.copyOnWrite = true;
 			
 			return other;
@@ -123,11 +145,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_BITMAP_FILL);
-		o.push (bitmap);
-		o.push (matrix);
-		b.push (repeat);
-		b.push (smooth);
+		__replace(types, t_i++, BEGIN_BITMAP_FILL);
+		__replaceBmp(o, o_i++, bitmap);
+		__replaceMtx(o, o_i++, matrix);
+		__replace(b, b_i++, repeat);
+		__replace(b, b_i++, smooth);
 		
 	}
 	
@@ -135,9 +157,9 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_FILL);
-		i.push (color);
-		f.push (alpha);
+		__replace(types, t_i++, BEGIN_FILL);
+		__replace(i, i_i++, color);
+		__replace(f, f_i++, alpha);
 		
 	}
 	
@@ -146,15 +168,15 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_GRADIENT_FILL);
-		o.push (type);
-		ii.push (colors);
-		ff.push (alphas);
-		ii.push (ratios);
-		o.push (matrix);
-		o.push (spreadMethod);
-		o.push (interpolationMethod);
-		f.push (focalPointRatio);
+		__replace(types, t_i++, BEGIN_GRADIENT_FILL);
+		__replace(o, o_i++, type);
+		__replace(ii, ii_i++, colors);
+		__replace(ff, ff_i++, alphas);
+		__replace(ii, ii_i++, ratios);
+		__replaceMtx(o, o_i++, matrix);
+		__replace(o, o_i++, spreadMethod);
+		__replace(o, o_i++, interpolationMethod);
+		__replace(f, f_i++, focalPointRatio);
 		
 	}
 	
@@ -163,24 +185,21 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (BEGIN_SHADER_FILL);
-		o.push (shaderBuffer);
+		__replace(types, t_i++, BEGIN_SHADER_FILL);
+		__replace(o, o_i++, shaderBuffer);
 		
 	}
 	
 	
 	public function clear ():Void {
 		
-		types = empty.types;
-		
-		b = empty.b;
-		i = empty.i;
-		f = empty.f;
-		o = empty.o;
-		ff = empty.ff;
-		ii = empty.ii;
-		
-		copyOnWrite = true;
+		t_i = 0;
+		b_i = 0;
+		f_i = 0;
+		ff_i = 0;
+		i_i = 0;
+		ii_i = 0;
+		o_i = 0;
 		
 	}
 	
@@ -198,13 +217,13 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (CUBIC_CURVE_TO);
-		f.push (controlX1);
-		f.push (controlY1);
-		f.push (controlX2);
-		f.push (controlY2);
-		f.push (anchorX);
-		f.push (anchorY);
+		__replace(types, t_i++, CUBIC_CURVE_TO);
+		__replace(f, f_i++, controlX1);
+		__replace(f, f_i++, controlY1);
+		__replace(f, f_i++, controlX2);
+		__replace(f, f_i++, controlY2);
+		__replace(f, f_i++, anchorX);
+		__replace(f, f_i++, anchorY);
 		
 	}
 	
@@ -212,18 +231,16 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (CURVE_TO);
-		f.push (controlX);
-		f.push (controlY);
-		f.push (anchorX);
-		f.push (anchorY);
+		__replace(types, t_i++, CURVE_TO);
+		__replace(f, f_i++, controlX);
+		__replace(f, f_i++, controlY);
+		__replace(f, f_i++, anchorX);
+		__replace(f, f_i++, anchorY);
 		
 	}
 	
 	
 	public function destroy ():Void {
-		
-		clear ();
 		
 		types = null;
 		
@@ -241,10 +258,10 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_CIRCLE);
-		f.push (x);
-		f.push (y);
-		f.push (radius);
+		__replace(types, t_i++, DRAW_CIRCLE);
+		__replace(f, f_i++, x);
+		__replace(f, f_i++, y);
+		__replace(f, f_i++, radius);
 		
 	}
 	
@@ -253,11 +270,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_ELLIPSE);
-		f.push (x);
-		f.push (y);
-		f.push (width);
-		f.push (height);
+		__replace(types, t_i++, DRAW_ELLIPSE);
+		__replace(f, f_i++, x);
+		__replace(f, f_i++, y);
+		__replace(f, f_i++, width);
+		__replace(f, f_i++, height);
 		
 	}
 	
@@ -266,10 +283,10 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_QUADS);
-		o.push (rects);
-		o.push (indices);
-		o.push (transforms);
+		__replace(types, t_i++, DRAW_QUADS);
+		__replace(o, o_i++, rects);
+		__replace(o, o_i++, indices);
+		__replace(o, o_i++, transforms);
 		
 	}
 	
@@ -278,11 +295,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_RECT);
-		f.push (x);
-		f.push (y);
-		f.push (width);
-		f.push (height);
+		__replace(types, t_i++, DRAW_RECT);
+		__replace(f, f_i++, x);
+		__replace(f, f_i++, y);
+		__replace(f, f_i++, width);
+		__replace(f, f_i++, height);
 		
 	}
 	
@@ -290,13 +307,19 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_ROUND_RECT);
-		f.push (x);
-		f.push (y);
-		f.push (width);
-		f.push (height);
-		f.push (ellipseWidth);
-		o.push (ellipseHeight);
+		__replace(types, t_i++, DRAW_ROUND_RECT);
+		__replace(f, f_i++, x);
+		__replace(f, f_i++, y);
+		__replace(f, f_i++, width);
+		__replace(f, f_i++, height);
+		__replace(f, f_i++, ellipseWidth);
+		
+		//Hand-inlined to prevent some weird unification issue
+		//__replace(o, o_i++, ellipseHeight);
+		
+		if(!__dirty && (o_i >= o.length || o[o_i] != ellipseHeight))
+			__dirty = true;
+		o[o_i++] = ellipseHeight;
 		
 	}
 	
@@ -305,11 +328,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (DRAW_TRIANGLES);
-		o.push (vertices);
-		o.push (indices);
-		o.push (uvtData);
-		o.push (culling);
+		__replace(types, t_i++, DRAW_TRIANGLES);
+		__replace(o, o_i++, vertices);
+		__replace(o, o_i++, indices);
+		__replace(o, o_i++, uvtData);
+		__replace(o, o_i++, culling);
 		
 	}
 	
@@ -318,7 +341,7 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (END_FILL);
+		__replace(types, t_i++, END_FILL);
 		
 	}
 	
@@ -327,11 +350,11 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_BITMAP_STYLE);
-		o.push (bitmap);
-		o.push (matrix);
-		b.push (repeat);
-		b.push (smooth);
+		__replace(types, t_i++, LINE_BITMAP_STYLE);
+		__replaceBmp(o, o_i++, bitmap);
+		__replaceMtx(o, o_i++, matrix);
+		__replace(b, b_i++, repeat);
+		__replace(b, b_i++, smooth);
 		
 	}
 	
@@ -340,15 +363,15 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_GRADIENT_STYLE);
-		o.push (type);
-		ii.push (colors);
-		ff.push (alphas);
-		ii.push (ratios);
-		o.push (matrix);
-		o.push (spreadMethod);
-		o.push (interpolationMethod);
-		f.push (focalPointRatio);
+		__replace(types, t_i++, LINE_GRADIENT_STYLE);
+		__replace(o, o_i++, type);
+		__replace(ii, ii_i++, colors);
+		__replace(ff, ff_i++, alphas);
+		__replace(ii, ii_i++, ratios);
+		__replaceMtx(o, o_i++, matrix);
+		__replace(o, o_i++, spreadMethod);
+		__replace(o, o_i++, interpolationMethod);
+		__replace(f, f_i++, focalPointRatio);
 		
 	}
 	
@@ -357,15 +380,22 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_STYLE);
-		o.push (thickness);
-		i.push (color);
-		f.push (alpha);
-		b.push (pixelHinting);
-		o.push (scaleMode);
-		o.push (caps);
-		o.push (joints);
-		f.push (miterLimit);
+		__replace(types, t_i++, LINE_STYLE);
+		
+		//Hand-inlined to prevent some weird unification issue
+		//__replace(o, o_i++, thickness);
+		
+		if(!__dirty && (o_i >= o.length || o[o_i] != thickness))
+			__dirty = true;
+		o[o_i++] = thickness;
+		
+		__replace(i, i_i++, color);
+		__replace(f, f_i++, alpha);
+		__replace(b, b_i++, pixelHinting);
+		__replace(o, o_i++, scaleMode);
+		__replace(o, o_i++, caps);
+		__replace(o, o_i++, joints);
+		__replace(f, f_i++, miterLimit);
 		
 	}
 	
@@ -374,9 +404,16 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (LINE_TO);
-		f.push (x);
-		f.push (y);
+		__replace(types, t_i++, LINE_TO);
+		__replace(f, f_i++, x);
+		__replace(f, f_i++, y);
+		
+	}
+	
+	
+	public function markAsClean ():Void {
+		
+		__dirty = false;
 		
 	}
 	
@@ -385,9 +422,9 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (MOVE_TO);
-		f.push (x);
-		f.push (y);
+		__replace(types, t_i++, MOVE_TO);
+		__replace(f, f_i++, x);
+		__replace(f, f_i++, y);
 		
 	}
 	
@@ -403,6 +440,7 @@ class DrawCommandBuffer {
 			o = o.copy ();
 			ff = ff.copy ();
 			ii = ii.copy ();
+			objVersions = objVersions.copy();
 			
 			copyOnWrite = false;
 			
@@ -415,8 +453,8 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (OVERRIDE_MATRIX);
-		o.push (matrix);
+		__replace(types, t_i++, OVERRIDE_MATRIX);
+		__replaceMtx(o, o_i++, matrix);
 		
 	}
 	
@@ -425,7 +463,7 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (WINDING_EVEN_ODD);
+		__replace(types, t_i++, WINDING_EVEN_ODD);
 		
 	}
 	
@@ -434,7 +472,7 @@ class DrawCommandBuffer {
 		
 		prepareWrite ();
 		
-		types.push (WINDING_NON_ZERO);
+		__replace(types, t_i++, WINDING_NON_ZERO);
 		
 	}
 	
@@ -446,11 +484,94 @@ class DrawCommandBuffer {
 	
 	
 	
-	private function get_length ():Int {
+	private function get_dirty ():Bool {
 		
-		return types.length;
+		return __dirty;
 		
 	}
 	
+	
+	private function get_length ():Int {
+		
+		return t_i;
+		
+	}
+	
+	
+	private function __initFromEmpty ():Void {
+		
+		types = empty.types;
+		
+		b = empty.b;
+		i = empty.i;
+		f = empty.f;
+		o = empty.o;
+		ff = empty.ff;
+		ii = empty.ii;
+		objVersions = empty.objVersions;
+		
+		copyOnWrite = true;
+		
+	}
+	
+	
+	@:generic
+	private inline function __replace<T>(a:Array<T>, i:Int, t:T):Void
+	{
+		if(!__dirty && (i >= a.length || a[i] != t))
+		{
+			__dirty = true;
+			/*if(i >= a.length)
+			{
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+			}
+			else
+			{
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
+			}*/
+		}
+		a[i] = t;
+		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+	}
+	
+	private inline function __replaceMtx(a:Array<Dynamic>, i:Int, t:Matrix):Void
+	{
+		if(!__dirty && (i >= a.length || !t.equals(cast a[i])))
+		{
+			__dirty = true;
+			/*if(i >= a.length)
+			{
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+			}
+			else
+			{
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
+			}*/
+		}
+		a[i] = t;
+		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+	}
+	
+	private inline function __replaceBmp(a:Array<Dynamic>, i:Int, t:BitmapData):Void
+	{
+		if(!__dirty && (i >= a.length || t != a[i] || t.image.version != objVersions[i]))
+		{
+			__dirty = true;
+			/*if(i >= a.length)
+			{
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+			}
+			else
+			{
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
+			}*/
+		}
+		a[i] = t;
+		
+		while(objVersions.length < i) objVersions.push(0);
+		objVersions[i] = t.image.version;
+		
+		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+	}
 	
 }
