@@ -1267,6 +1267,8 @@ class CairoGraphics {
 		
 		if (!graphics.__dirty || graphics.__managed) return;
 		
+		@:privateAccess graphics.__commands.__endBuffer();
+		
 		if (!graphics.__commands.dirty) return;
 		
 		bounds = graphics.__bounds;

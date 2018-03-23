@@ -1251,7 +1251,9 @@ class CanvasGraphics {
 		
 		graphics.__update ();
 		
-		if (graphics.__dirty) {
+		@:privateAccess graphics.__commands.__endBuffer();
+		
+		if (graphics.__dirty && graphics.__commands.dirty) {
 			
 			hitTesting = false;
 			

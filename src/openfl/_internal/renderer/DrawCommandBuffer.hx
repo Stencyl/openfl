@@ -49,6 +49,7 @@ class DrawCommandBuffer {
 	
 	private var objVersions:Array<Int>;
 	
+	private var __lastLength:Int = 0;
 	private var __dirty:Bool = true;
 	
 	public function new () {
@@ -511,6 +512,17 @@ class DrawCommandBuffer {
 		objVersions = empty.objVersions;
 		
 		copyOnWrite = true;
+		
+	}
+	
+	
+	private function __endBuffer ():Void {
+		
+		if(__lastLength != t_i) __dirty = true;
+		
+		//trace("Marked DCB as dirty due to length change: " + __lastLength + " -> " + t_i);
+		
+		__lastLength = t_i;
 		
 	}
 	
