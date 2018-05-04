@@ -63,7 +63,9 @@ import openfl._internal.renderer.opengl.stats.DrawCallContext;
 @:access(lime.math.Rectangle)
 @:access(openfl.display3D.textures.TextureBase)
 @:access(openfl.display.DisplayObject)
+@:access(openfl.display.DisplayObjectShader)
 @:access(openfl.display.Graphics)
+@:access(openfl.display.Shader)
 @:access(openfl.filters.BitmapFilter)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
@@ -104,13 +106,16 @@ class BitmapData implements IBitmapDrawable {
 	private var __framebufferContext:GLRenderContext;
 	private var __isMask:Bool;
 	private var __isValid:Bool;
+	private var __mask:DisplayObject;
 	private var __renderable:Bool;
 	private var __renderTransform:Matrix;
+	private var __scrollRect:Rectangle;
 	private var __surface:CairoSurface;
 	private var __texture:GLTexture;
 	private var __textureContext:GLRenderContext;
 	private var __textureVersion:Int;
 	private var __transform:Matrix;
+	private var __uvRect:Rectangle;
 	private var __worldAlpha:Float;
 	private var __worldColorTransform:ColorTransform;
 	private var __worldTransform:Matrix;
@@ -200,7 +205,43 @@ class BitmapData implements IBitmapDrawable {
 		
 		if (!readable || sourceBitmapData == null || !sourceBitmapData.readable) return;
 		
-		filter.__applyFilter (this, sourceBitmapData, sourceRect, destPoint);
+		// TODO: Ways to optimize this?
+		
+		var needSecondBitmapData = filter.__needSecondBitmapData;
+		var needCopyOfOriginal = filter.__preserveObject;
+		
+		var bitmapData2 = null;
+		var bitmapData3 = null;
+		
+		if (needSecondBitmapData) {
+			bitmapData2 = new BitmapData (width, height, true, 0);
+		} else {
+			bitmapData2 = this;
+		}
+		
+		if (needCopyOfOriginal) {
+			bitmapData3 = new BitmapData (width, height, true, 0);
+		}
+		
+		if (filter.__preserveObject) {
+			bitmapData3.copyPixels (this, rect, destPoint);
+		}
+		
+		var lastBitmap = filter.__applyFilter (bitmapData2, this, sourceRect, destPoint);
+		
+		if (filter.__preserveObject) {
+			lastBitmap.draw (bitmapData3, null, null);
+		}
+		
+		if (needSecondBitmapData && lastBitmap == bitmapData2) {
+			
+			bitmapData2.image.version = image.version;
+			image = bitmapData2.image;
+			
+		}
+		
+		image.dirty = true;
+		image.version++;
 		
 	}
 	
@@ -447,7 +488,7 @@ class BitmapData implements IBitmapDrawable {
 			//if(renderer != null) {
 				//
 				//var renderer = @:privateAccess renderer.renderer;
-				//var gl = renderer.gl;
+				//var gl = renderer.__gl;
 				//
 				//if (gl != null) {
 					//
@@ -501,7 +542,14 @@ class BitmapData implements IBitmapDrawable {
 		_colorTransform.__copyFrom (source.__worldColorTransform);
 		_colorTransform.__invert ();
 		
-		if (!readable && __textureContext != null) {
+		if (!readable) {
+			
+			if (__textureContext == null) {
+				
+				// TODO: Some way to select current GL context for renderer?
+				__textureContext = GL.context;
+				
+			}
 			
 			if (colorTransform != null) {
 				
@@ -509,15 +557,15 @@ class BitmapData implements IBitmapDrawable {
 				
 			}
 			
-			// TODO
-			
-			var renderer = new OpenGLRenderer (__textureContext);
+			var renderer = new OpenGLRenderer (__textureContext, this);
 			renderer.__allowSmoothing = smoothing;
 			renderer.__setBlendMode (blendMode);
 			
 			renderer.__worldTransform = transform;
 			renderer.__worldAlpha = 1 / source.__worldAlpha;
 			renderer.__worldColorTransform = _colorTransform;
+			
+			renderer.__resize (width, height);
 			
 			if (clipRect != null) {
 				
@@ -666,11 +714,7 @@ class BitmapData implements IBitmapDrawable {
 			
 		}
 		
-		if (readable) {
-			
-			image.fillRect (rect.__toLimeRectangle (), color, ARGB32);
-			
-		} else if (__framebuffer != null) {
+		if (__framebuffer != null) {
 			
 			var gl = GL.context;
 			var color:ARGB = (color:ARGB);
@@ -695,6 +739,10 @@ class BitmapData implements IBitmapDrawable {
 			}
 			
 			gl.bindFramebuffer (gl.FRAMEBUFFER, null);
+			
+		} else if (readable) {
+			
+			image.fillRect (rect.__toLimeRectangle (), color, ARGB32);
 			
 		}
 		
@@ -816,10 +864,14 @@ class BitmapData implements IBitmapDrawable {
 				
 			}
 			
+			__uvRect = new Rectangle (0, 0, newWidth, newHeight);
+			
 			var uvWidth = width / newWidth;
 			var uvHeight = height / newHeight;
 			
 			#else
+			
+			__uvRect = new Rectangle (0, 0, width, height);
 			
 			var uvWidth = 1;
 			var uvHeight = 1;
@@ -1620,23 +1672,13 @@ class BitmapData implements IBitmapDrawable {
 	
 	private function __drawGL (source:IBitmapDrawable, renderer:OpenGLRenderer):Void {
 		
-		// gl.bindFramebuffer (gl.FRAMEBUFFER, __getFramebuffer (gl));
-		// gl.viewport (0, 0, width, height);
+		var gl = renderer.__gl;
 		
-		// var renderer = new OpenGLRenderer (gl);
+		gl.bindFramebuffer (gl.FRAMEBUFFER, __getFramebuffer (gl));
 		
-		// var renderer = renderer.renderer;
-		// renderer.clearRenderDirty = false;
-		// renderer.shaderManager = cast (null, GLRenderer).renderer.shaderManager;
+		renderer.__render (source);
 		
-		// var matrixCache = source.__worldTransform;
-		// source.__updateTransforms (matrix);
-		// source.__updateChildren (false);
-		// source.__renderGL (renderer.renderer);
-		// source.__updateTransforms (matrixCache);
-		// source.__updateChildren (true);
-		
-		// gl.bindFramebuffer (gl.FRAMEBUFFER, null);
+		gl.bindFramebuffer (gl.FRAMEBUFFER, null);
 		
 	}
 	
@@ -1715,6 +1757,12 @@ class BitmapData implements IBitmapDrawable {
 			
 			gl.bindFramebuffer (gl.FRAMEBUFFER, __framebuffer);
 			gl.framebufferTexture2D (gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, __texture, 0);
+			
+			if (gl.checkFramebufferStatus (gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
+				
+				trace (gl.getError ());
+				
+			}
 			
 		}
 		
@@ -1845,12 +1893,12 @@ class BitmapData implements IBitmapDrawable {
 	
 	private function __renderGL (renderer:OpenGLRenderer):Void {
 		
-		var gl = renderer.gl;
+		var gl = renderer.__gl;
 		
 		renderer.__setBlendMode (NORMAL);
 		
 		var shader = renderer.__defaultDisplayShader;
-		renderer.setDisplayShader (shader);
+		renderer.setShader (shader);
 		renderer.applyBitmapData (this, renderer.__allowSmoothing && (renderer.__upscaled));
 		renderer.applyMatrix (renderer.__getMatrix (__worldTransform));
 		renderer.applyAlpha (__worldAlpha);
@@ -1860,8 +1908,8 @@ class BitmapData implements IBitmapDrawable {
 		// alpha == 1, __worldColorTransform
 		
 		gl.bindBuffer (gl.ARRAY_BUFFER, getBuffer (gl));
-		gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
-		gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+		if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
+		if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
 		
 		gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
 		
@@ -1876,7 +1924,7 @@ class BitmapData implements IBitmapDrawable {
 	
 	private function __renderGLMask (renderer:OpenGLRenderer):Void {
 		
-		var gl = renderer.gl;
+		var gl = renderer.__gl;
 		
 		var shader = renderer.__maskShader;
 		renderer.setShader (shader);
@@ -1885,8 +1933,8 @@ class BitmapData implements IBitmapDrawable {
 		renderer.updateShader ();
 		
 		gl.bindBuffer (gl.ARRAY_BUFFER, getBuffer (gl));
-		gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 0);
-		gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+		gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 0);
+		gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
 		
 		gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
 		
@@ -1905,6 +1953,44 @@ class BitmapData implements IBitmapDrawable {
 		this.height = height;
 		this.rect.width = width;
 		this.rect.height = height;
+		
+	}
+	
+	
+	private function __setUVRect (gl:GLRenderContext, x:Float, y:Float, width:Float, height:Float):Void {
+		
+		var buffer = getBuffer (gl);
+		
+		if (buffer != null && (width != __uvRect.width || height != __uvRect.height || x != __uvRect.x || y != __uvRect.y)) {
+			
+			if (__uvRect == null) __uvRect = new Rectangle ();
+			__uvRect.setTo (x, y, width, height);
+			
+			var uvX = x / this.width;
+			var uvY = y / this.height;
+			var uvWidth = width / this.width;
+			var uvHeight = height / this.height;
+			
+			__bufferData[0] = width;
+			__bufferData[1] = height;
+			__bufferData[3] = uvX + uvWidth;
+			__bufferData[4] = uvY + uvHeight;
+			__bufferData[__bufferStride + 1] = height;
+			__bufferData[__bufferStride + 3] = uvX;
+			__bufferData[__bufferStride + 4] = uvY + uvHeight;
+			__bufferData[__bufferStride * 2] = width;
+			__bufferData[__bufferStride * 2 + 3] = uvX + uvWidth;
+			__bufferData[__bufferStride * 2 + 4] = uvY;
+			__bufferData[__bufferStride * 3 + 3] = uvX;
+			__bufferData[__bufferStride * 3 + 4] = uvY;
+			
+			#if (js && html5)
+			(gl:WebGLContext).bufferData (gl.ARRAY_BUFFER, __bufferData, gl.STATIC_DRAW);
+			#else
+			gl.bufferData (gl.ARRAY_BUFFER, __bufferData.byteLength, __bufferData, gl.STATIC_DRAW);
+			#end
+			
+		}
 		
 	}
 	

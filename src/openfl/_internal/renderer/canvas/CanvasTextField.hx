@@ -61,7 +61,7 @@ class CanvasTextField {
 			
 		}
 		
-		graphics.__update ();
+		graphics.__update (renderer.__worldTransform);
 		
 		if (textField.__dirty || graphics.__dirty) {
 			
@@ -215,7 +215,7 @@ class CanvasTextField {
 							
 						}
 						
-						if (textField.__filters != null && textField.__filters.length > 0) {
+						if (textField.__filters != null) {
 							
 							// Hack, force outline
 							

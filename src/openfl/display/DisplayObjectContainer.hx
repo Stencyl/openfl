@@ -4,6 +4,7 @@ package openfl.display;
 import openfl._internal.renderer.cairo.CairoGraphics;
 import openfl._internal.renderer.canvas.CanvasGraphics;
 import openfl._internal.renderer.opengl.GLGraphics;
+import openfl._internal.renderer.opengl.GLShape;
 import openfl.display.Stage;
 import openfl.errors.ArgumentError;
 import openfl.errors.RangeError;
@@ -869,7 +870,8 @@ class DisplayObjectContainer extends InteractiveObject {
 		
 		if (__graphics != null) {
 			
-			GLGraphics.renderMask (__graphics, renderer);
+			//GLGraphics.renderMask (__graphics, renderer);
+			GLShape.renderMask (this, renderer);
 			
 		}
 		
@@ -918,8 +920,30 @@ class DisplayObjectContainer extends InteractiveObject {
 		}
 		
 	}
-
-
+	
+	
+	private override function __shouldCacheHardware (value:Null<Bool>):Null<Bool> {
+		
+		if (value == true) return true;
+		value = super.__shouldCacheHardware (value);
+		if (value == true) return true;
+		
+		if (__children != null) {
+			
+			for (child in __children) {
+				
+				value = child.__shouldCacheHardware (value);
+				if (value == true) return true;
+				
+			}
+			
+		}
+		
+		return value;
+		
+	}
+	
+	
 	private override function __stopAllMovieClips ():Void {
 		
 		for (child in __children) {

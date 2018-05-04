@@ -817,7 +817,7 @@ class CairoGraphics {
 					
 					if (shaderBuffer.inputCount > 0) {
 						
-						fillPattern = createImagePattern (shaderBuffer.inputs[0], null, false, shaderBuffer.inputSmoothing[0]);
+						fillPattern = createImagePattern (shaderBuffer.inputs[0], null, shaderBuffer.inputWrap[0] != CLAMP, shaderBuffer.inputFilter[0] != NEAREST);
 						
 						bitmapFill = shaderBuffer.inputs[0];
 						bitmapRepeat = false;
@@ -1263,7 +1263,8 @@ class CairoGraphics {
 		CairoGraphics.graphics = graphics;
 		CairoGraphics.allowSmoothing = renderer.__allowSmoothing;
 		CairoGraphics.worldAlpha = renderer.__getAlpha (graphics.__owner.__worldAlpha);
-		graphics.__update ();
+		
+		graphics.__update (renderer.__worldTransform);
 		
 		if (!graphics.__dirty || graphics.__managed) return;
 		

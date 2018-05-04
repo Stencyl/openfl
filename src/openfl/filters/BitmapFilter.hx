@@ -2,11 +2,17 @@ package openfl.filters;
 
 
 import openfl.display.BitmapData;
+import openfl.display.BlendMode;
 import openfl.display.DisplayObject;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
+
+#if !openfl_debug
+@:fileXml('tags="haxe,release"')
+@:noDebug
+#end
 
 
 class BitmapFilter {
@@ -19,6 +25,7 @@ class BitmapFilter {
 	private var __preserveObject:Bool;
 	private var __renderDirty:Bool;
 	private var __rightExtension:Int;
+	private var __shaderBlendMode:BlendMode;
 	private var __topExtension:Int;
 	
 	
@@ -30,6 +37,7 @@ class BitmapFilter {
 		__numShaderPasses = 0;
 		__preserveObject = false;
 		__rightExtension = 0;
+		__shaderBlendMode = NORMAL;
 		__topExtension = 0;
 		
 	}

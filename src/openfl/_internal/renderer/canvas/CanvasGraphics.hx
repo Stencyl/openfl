@@ -839,7 +839,7 @@ class CanvasGraphics {
 					if (shaderBuffer.inputCount > 0) {
 						
 						bitmapFill = shaderBuffer.inputs[0];
-						context.fillStyle = createBitmapFill (bitmapFill, false, shaderBuffer.inputSmoothing[0]);
+						context.fillStyle = createBitmapFill (bitmapFill, shaderBuffer.inputWrap[0] != CLAMP, shaderBuffer.inputFilter[0] != NEAREST);
 						hasFill = true;
 						
 						pendingMatrix = null;
@@ -1249,7 +1249,7 @@ class CanvasGraphics {
 		
 		#if (js && html5)
 		
-		graphics.__update ();
+		graphics.__update (renderer.__worldTransform);
 		
 		@:privateAccess graphics.__commands.__endBuffer();
 		
@@ -1310,7 +1310,7 @@ class CanvasGraphics {
 					if (canvas.width == scaledWidth && canvas.height == scaledHeight) {
 						
 						context.closePath ();
-						context.resetTransform ();
+						context.setTransform (1, 0, 0, 1, 0, 0);
 						context.clearRect (0, 0, scaledWidth, scaledHeight);
 						
 					} else {

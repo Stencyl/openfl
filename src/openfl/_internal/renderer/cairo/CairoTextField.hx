@@ -59,7 +59,7 @@ class CairoTextField {
 			
 		}
 		
-		graphics.__update ();
+		graphics.__update (renderer.__worldTransform);
 		
 		var width = graphics.__width;
 		var height = graphics.__height;
@@ -224,7 +224,7 @@ class CairoTextField {
 					
 					var usedHack = false;
 					
-					if (textField.__filters != null && textField.__filters.length > 0) {
+					if (textField.__filters != null) {
 						
 						// Hack, force outline
 						
@@ -275,8 +275,9 @@ class CairoTextField {
 						for (position in group.positions) {
 							
 							if (position == null || position.glyph == 0) continue;
-							glyphs.push (new CairoGlyph (position.glyph, x + 0.5, y + 0.5));
+							glyphs.push (new CairoGlyph (position.glyph, x + position.offset.x + 0.5, y - position.offset.y + 0.5));
 							x += position.advance.x;
+							y -= position.advance.y;
 							
 						}
 						

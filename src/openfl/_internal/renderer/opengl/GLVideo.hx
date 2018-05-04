@@ -16,12 +16,16 @@ import openfl._internal.renderer.opengl.stats.DrawCallContext;
 @:noDebug
 #end
 
+@:access(openfl.display.Shader)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.media.Video)
 @:access(openfl.net.NetStream)
 
 
 class GLVideo {
+	
+	
+	private static var __textureSizeValue = [ 0, 0. ];
 	
 	
 	public static function render (video:Video, renderer:OpenGLRenderer):Void {
@@ -31,23 +35,34 @@ class GLVideo {
 		
 		if (video.__stream.__video != null) {
 			
-			var gl = renderer.gl;
+			var gl = renderer.__gl;
 			
 			renderer.__setBlendMode (video.__worldBlendMode);
 			renderer.__pushMaskObject (video);
 			// renderer.filterManager.pushObject (video);
 			
-			var shader = renderer.__initDisplayShader (video.__worldRenderShader);
-			renderer.setDisplayShader (shader);
-			renderer.applyBitmapData (null, renderer.__allowSmoothing);
+			var shader = renderer.__initDisplayShader (cast video.__worldShader);
+			renderer.setShader (shader);
+			
+			// TODO: Support ShaderInput<Video>
+			renderer.applyBitmapData (null, renderer.__allowSmoothing, false);
+			gl.bindTexture (gl.TEXTURE_2D, video.__getTexture (gl));
+			
 			//shader.uImage0.input = bitmap.__bitmapData;
 			//shader.uImage0.smoothing = renderer.__allowSmoothing && (bitmap.smoothing || renderer.__upscaled);
 			renderer.applyMatrix (renderer.__getMatrix (video.__renderTransform));
 			renderer.applyAlpha (video.__worldAlpha);
 			renderer.applyColorTransform (video.__worldColorTransform);
-			renderer.updateShader ();
 			
-			gl.bindTexture (gl.TEXTURE_2D, video.__getTexture (gl));
+			if (shader.__textureSize != null) {
+				
+				__textureSizeValue[0] = (video.__stream != null) ? video.__stream.__video.width : 0;
+				__textureSizeValue[1] = (video.__stream != null) ? video.__stream.__video.height : 0;
+				shader.__textureSize.value = __textureSizeValue;
+				
+			}
+			
+			renderer.updateShader ();
 			
 			if (video.smoothing) {
 				
@@ -62,8 +77,8 @@ class GLVideo {
 			}
 			
 			gl.bindBuffer (gl.ARRAY_BUFFER, video.__getBuffer (gl));
-			gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
-			gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+			if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
+			if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
 			gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
 			
 			#if gl_stats
@@ -88,18 +103,18 @@ class GLVideo {
 		
 		if (video.__stream.__video != null) {
 			
-			var gl = renderer.gl;
+			var gl = renderer.__gl;
 			
 			var shader = renderer.__maskShader;
-			renderer.setDisplayShader (shader);
+			renderer.setShader (shader);
 			renderer.applyBitmapData (GLMaskShader.opaqueBitmapData, true);
 			renderer.applyMatrix (renderer.__getMatrix (video.__renderTransform));
 			renderer.updateShader ();
 			
 			gl.bindBuffer (gl.ARRAY_BUFFER, video.__getBuffer (gl));
 			
-			gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
-			gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+			gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
+			gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
 			
 			gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
 			

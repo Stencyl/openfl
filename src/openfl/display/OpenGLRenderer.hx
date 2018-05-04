@@ -5,10 +5,13 @@ import lime.graphics.opengl.ext.KHR_debug;
 import lime.graphics.opengl.GLFramebuffer;
 import lime.graphics.GLRenderContext;
 import lime.math.Matrix4;
+import lime.utils.Float32Array;
 import openfl._internal.renderer.opengl.GLMaskShader;
 import openfl._internal.renderer.ShaderBuffer;
 import openfl.display.BitmapData;
+import openfl.display.DisplayObjectShader;
 import openfl.display.Graphics;
+import openfl.display.GraphicsShader;
 import openfl.display.Stage;
 import openfl.geom.ColorTransform;
 import openfl.geom.Matrix;
@@ -19,6 +22,8 @@ import openfl.geom.Rectangle;
 @:noDebug
 #end
 
+@:access(lime._backend.html5.HTML5GLRenderContext)
+@:access(lime.graphics.GLRenderContext)
 @:access(openfl._internal.renderer.ShaderBuffer)
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.DisplayObject)
@@ -31,6 +36,7 @@ import openfl.geom.Rectangle;
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
 @:allow(openfl._internal.renderer.opengl)
+@:allow(openfl._internal.stage3D.opengl)
 @:allow(openfl.display3D.textures)
 @:allow(openfl.display3D)
 @:allow(openfl.display)
@@ -46,12 +52,17 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	private static var __emptyColorValue = [ 0, 0, 0, 0. ];
 	private static var __emptyAlphaValue = [ 1. ];
 	private static var __hasColorTransformValue = [ false ];
+	private static var __textureSizeValue = [ 0, 0. ];
 	
+	#if openfljs
+	public var gl:js.html.webgl.RenderingContext;
+	#else
 	public var gl:GLRenderContext;
+	#end
 	
 	private var __clipRects:Array<Rectangle>;
-	private var __currentDisplayShader:DisplayObjectShader;
-	private var __currentGraphicsShader:GraphicsShader;
+	private var __currentDisplayShader:Shader;
+	private var __currentGraphicsShader:Shader;
 	private var __currentRenderTarget:BitmapData;
 	private var __currentShader:Shader;
 	private var __currentShaderBuffer:ShaderBuffer;
@@ -62,11 +73,10 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	private var __displayHeight:Int;
 	private var __displayWidth:Int;
 	private var __flipped:Bool;
+	private var __gl:GLRenderContext;
 	private var __height:Int;
 	private var __maskShader:GLMaskShader;
 	private var __matrix:Matrix4;
-	private var __renderTargetA:BitmapData;
-	private var __renderTargetB:BitmapData;
 	private var __maskObjects:Array<DisplayObject>;
 	private var __numClipRects:Int;
 	private var __offsetX:Int;
@@ -85,13 +95,19 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		super ();
 		
+		#if openfljs
+		this.gl = gl.__context;
+		#else
 		this.gl = gl;
+		#end
+		
 		this.__defaultRenderTarget = defaultRenderTarget;
 		this.__flipped = (__defaultRenderTarget == null);
+		this.__gl = gl;
 		
 		if (Graphics.maxTextureWidth == null) {
 			
-			Graphics.maxTextureWidth = Graphics.maxTextureHeight = gl.getInteger (gl.MAX_TEXTURE_SIZE);
+			Graphics.maxTextureWidth = Graphics.maxTextureHeight = __gl.getInteger (__gl.MAX_TEXTURE_SIZE);
 			
 		}
 		
@@ -99,11 +115,11 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		__values = new Array ();
 		
 		#if gl_debug
-		var ext:KHR_debug = gl.getExtension ("KHR_debug");
+		var ext:KHR_debug = __gl.getExtension ("KHR_debug");
 		if (ext != null) {
 			
-			gl.enable (ext.DEBUG_OUTPUT);
-			gl.enable (ext.DEBUG_OUTPUT_SYNCHRONOUS);
+			__gl.enable (ext.DEBUG_OUTPUT);
+			__gl.enable (ext.DEBUG_OUTPUT_SYNCHRONOUS);
 			
 		}
 		#end
@@ -117,7 +133,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		__type = OPENGL;
 		
 		__setBlendMode (NORMAL);
-		gl.enable (gl.BLEND);
+		__gl.enable (__gl.BLEND);
 		
 		__clipRects = new Array ();
 		__maskObjects = new Array ();
@@ -142,51 +158,66 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__currentShaderBuffer != null) {
 			
-			var floatRefs = __currentShaderBuffer.paramRefs_Float;
-			var floatStart = __currentShaderBuffer.paramRefs_Bool.length;
-			var hasAlpha = false;
+			__currentShaderBuffer.addOverride ("openfl_Alpha", __alphaValue);
 			
-			for (i in 0...floatRefs.length) {
-				
-				if (floatRefs[i].name == "alpha") {
-					
-					hasAlpha = (__currentShaderBuffer.paramLengths[floatStart + i] > 0);
-					break;
-					
-				}
-				
-			}
+		} else if (__currentShader != null) {
 			
-			if (!hasAlpha) {
-				
-				__currentShaderBuffer.addOverride ("alpha", __alphaValue);
-				
-			}
-			
-		} else if (__currentGraphicsShader != null) {
-			
-			__currentGraphicsShader.alpha.value = __alphaValue;
-			
-		} else {
-			
-			__currentDisplayShader.alpha.value = __alphaValue;
+			if (__currentShader.__alpha != null) __currentShader.__alpha.value = __alphaValue;
 			
 		}
 		
 	}
 	
 	
-	public function applyBitmapData (bitmapData:BitmapData, smoothing:Bool):Void {
+	public function applyBitmapData (bitmapData:BitmapData, smooth:Bool, repeat:Bool = false):Void {
 		
-		if (__currentGraphicsShader != null) {
+		if (__currentShaderBuffer != null) {
 			
-			__currentGraphicsShader.texture0.input = bitmapData;
-			__currentGraphicsShader.texture0.smoothing = smoothing;
+			if (bitmapData != null) {
+				
+				__textureSizeValue[0] = bitmapData.width;
+				__textureSizeValue[1] = bitmapData.height;
+				__currentShaderBuffer.addOverride ("openfl_TextureSize", __textureSizeValue);
+				
+			}
 			
-		} else {
+		} else if (__currentShader != null) {
 			
-			__currentDisplayShader.texture0.input = bitmapData;
-			__currentDisplayShader.texture0.smoothing = smoothing;
+			if (__currentShader.__bitmap != null) {
+				
+				__currentShader.__bitmap.input = bitmapData;
+				__currentShader.__bitmap.filter = smooth ? LINEAR : NEAREST;
+				__currentShader.__bitmap.mipFilter = MIPNONE;
+				__currentShader.__bitmap.wrap = repeat ? REPEAT : CLAMP;
+				
+			}
+			
+			if (__currentShader.__texture != null) {
+				
+				__currentShader.__texture.input = bitmapData;
+				__currentShader.__texture.filter = smooth ? LINEAR : NEAREST;
+				__currentShader.__texture.mipFilter = MIPNONE;
+				__currentShader.__texture.wrap = repeat ? REPEAT : CLAMP;
+				
+			}
+			
+			if (__currentShader.__textureSize != null) {
+				
+				if (bitmapData != null) {
+					
+					// __textureSizeValue[0] = bitmapData.__textureWidth;
+					// __textureSizeValue[1] = bitmapData.__textureHeight;
+					__textureSizeValue[0] = bitmapData.width;
+					__textureSizeValue[1] = bitmapData.height;
+					__currentShader.__textureSize.value = __textureSizeValue;
+					
+				} else {
+					
+					__currentShader.__textureSize.value = null;
+					
+				}
+				
+			}
 			
 		}
 		
@@ -195,86 +226,36 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	public function applyColorTransform (colorTransform:ColorTransform):Void {
 		
-		if (__currentShaderBuffer != null) {
+		var enabled = (colorTransform != null && !colorTransform.__isDefault ());
+		applyHasColorTransform (enabled);
+		
+		if (enabled) {
 			
-			var floatRefs = __currentShaderBuffer.paramRefs_Float;
-			var floatStart = __currentShaderBuffer.paramRefs_Bool.length;
+			colorTransform.__setArrays (__colorMultipliersValue, __colorOffsetsValue);
 			
-			var hasColorMultipliers = false;
-			var hasColorOffsets = false;
-			
-			for (i in 0...floatRefs.length) {
+			if (__currentShaderBuffer != null) {
 				
-				if (floatRefs[i].name == "colorMultipliers") {
-					
-					hasColorMultipliers = (__currentShaderBuffer.paramLengths[floatStart + i] > 0);
-					
-				} else if (floatRefs[i].name == "colorOffsets") {
-					
-					hasColorOffsets = (__currentShaderBuffer.paramLengths[floatStart + i] > 0);
-					
-				}
+				__currentShaderBuffer.addOverride ("openfl_ColorMultiplier", __colorMultipliersValue);
+				__currentShaderBuffer.addOverride ("openfl_ColorOffset", __colorOffsetsValue);
 				
-			}
-			
-			if (hasColorMultipliers || hasColorOffsets) {
+			} else if (__currentShader != null) {
 				
-				applyHasColorTransform (true);
-				
-				if (!hasColorMultipliers) {
-					
-					__currentShaderBuffer.addOverride ("colorMultipliers", __defaultColorMultipliersValue);
-					
-				} else if (!hasColorOffsets) {
-					
-					__currentShaderBuffer.addOverride ("colorOffsets", __emptyColorValue);
-					
-				}
-				
-			} else {
-				
-				applyHasColorTransform (false);
+				if (__currentShader.__colorMultiplier != null) __currentShader.__colorMultiplier.value = __colorMultipliersValue;
+				if (__currentShader.__colorOffset != null) __currentShader.__colorOffset.value = __colorOffsetsValue;
 				
 			}
 			
 		} else {
 			
-			var enabled = (colorTransform != null && !colorTransform.__isDefault ());
-			applyHasColorTransform (enabled);
-			
-			if (__currentGraphicsShader != null) {
+			if (__currentShaderBuffer != null) {
 				
-				var shaderData = __currentGraphicsShader.data;
+				__currentShaderBuffer.addOverride ("openfl_ColorMultiplier", __emptyColorValue);
+				__currentShaderBuffer.addOverride ("openfl_ColorOffset", __emptyColorValue);
 				
-				if (enabled) {
-					
-					colorTransform.__setArrays (__colorMultipliersValue, __colorOffsetsValue);
-					shaderData.colorMultipliers.value = __colorMultipliersValue;
-					shaderData.colorOffsets.value = __colorOffsetsValue;
-					
-				} else {
-					
-					shaderData.colorMultipliers.value = __emptyColorValue;
-					shaderData.colorOffsets.value = __emptyColorValue;
-					
-				}
+			} else if (__currentShader != null) {
 				
-			} else {
-				
-				var shaderData = __currentDisplayShader.data;
-				
-				if (enabled) {
-					
-					colorTransform.__setArrays (__colorMultipliersValue, __colorOffsetsValue);
-					shaderData.colorMultipliers.value = __colorMultipliersValue;
-					shaderData.colorOffsets.value = __colorOffsetsValue;
-					
-				} else {
-					
-					shaderData.colorMultipliers.value = __emptyColorValue;
-					shaderData.colorOffsets.value = __emptyColorValue;
-					
-				}
+				if (__currentShader.__colorMultiplier != null) __currentShader.__colorMultiplier.value = __emptyColorValue;
+				if (__currentShader.__colorOffset != null) __currentShader.__colorOffset.value = __emptyColorValue;
 				
 			}
 			
@@ -291,13 +272,9 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			__currentShaderBuffer.addOverride ("openfl_HasColorTransform", __hasColorTransformValue);
 			
-		} else if (__currentGraphicsShader != null) {
+		} else if (__currentShader != null) {
 			
-			__currentGraphicsShader.openfl_HasColorTransform.value = __hasColorTransformValue;
-			
-		} else {
-			
-			__currentDisplayShader.openfl_HasColorTransform.value = __hasColorTransformValue;
+			if (__currentShader.__hasColorTransform != null) __currentShader.__hasColorTransform.value = __hasColorTransformValue;
 			
 		}
 		
@@ -310,13 +287,9 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			__currentShaderBuffer.addOverride ("openfl_Matrix", matrix);
 			
-		} else if (__currentGraphicsShader != null) {
+		} else if (__currentShader != null) {
 			
-			__currentGraphicsShader.openfl_Matrix.value = matrix;
-			
-		} else if (__currentDisplayShader != null) {
-			
-			__currentDisplayShader.openfl_Matrix.value = matrix;
+			if (__currentShader.__matrix != null) __currentShader.__matrix.value = matrix;
 			
 		}
 		
@@ -354,28 +327,11 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	public inline function setDisplayShader (shader:DisplayObjectShader):Void {
-		
-		setShader (shader);
-		
-	}
-	
-	
-	public inline function setGraphicsShader (shader:GraphicsShader):Void {
-		
-		setShader (shader);
-		
-	}
-	
-	
 	public function setShader (shader:Shader):Void {
 		
 		__currentShaderBuffer = null;
 		
 		if (__currentShader == shader) return;
-		
-		__currentDisplayShader = null;
-		__currentGraphicsShader = null;
 		
 		if (__currentShader != null) {
 			
@@ -386,21 +342,24 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		if (shader == null) {
 			
 			__currentShader = null;
-			gl.useProgram (null);
+			__gl.useProgram (null);
 			return;
 			
 		} else {
 			
 			__currentShader = shader;
-			
-			if (shader.__isGraphicsShader) __currentGraphicsShader = cast shader;
-			if (shader.__isDisplayShader) __currentDisplayShader = cast shader;
-			
 			__initShader (shader);
-			gl.useProgram (shader.glProgram);
+			__gl.useProgram (shader.glProgram);
 			__currentShader.__enable ();
 			
 		}
+		
+	}
+	
+	
+	public function setViewport ():Void {
+		
+		__gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
 		
 	}
 	
@@ -409,6 +368,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__currentShader != null) {
 			
+			if (__currentShader.__position != null) __currentShader.__position.__useArray = true;
+			if (__currentShader.__textureCoord != null) __currentShader.__textureCoord.__useArray = true;
 			__currentShader.__update ();
 			
 		}
@@ -418,13 +379,9 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	public function useAlphaArray ():Void {
 		
-		if (__currentGraphicsShader != null) {
+		if (__currentShader != null) {
 			
-			__currentGraphicsShader.alpha.__useArray = true;
-			
-		} else if (__currentDisplayShader != null) {
-			
-			__currentDisplayShader.alpha.__useArray = true;
+			if (__currentShader.__alpha != null) __currentShader.__alpha.__useArray = true;
 			
 		}
 		
@@ -433,15 +390,29 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	public function useColorTransformArray ():Void {
 		
-		if (__currentGraphicsShader != null) {
+		if (__currentShader != null) {
 			
-			__currentGraphicsShader.colorMultipliers.__useArray = true;
-			__currentGraphicsShader.colorOffsets.__useArray = true;
+			if (__currentShader.__colorMultiplier != null) __currentShader.__colorMultiplier.__useArray = true;
+			if (__currentShader.__colorOffset != null) __currentShader.__colorOffset.__useArray = true;
 			
-		} else if (__currentDisplayShader != null) {
+		}
+		
+	}
+	
+	
+	private function __cleanup ():Void {
+		
+		if (__stencilReference > 0) {
 			
-			__currentDisplayShader.colorMultipliers.__useArray = true;
-			__currentDisplayShader.colorOffsets.__useArray = true;
+			__stencilReference = 0;
+			__gl.disable (__gl.STENCIL_TEST);
+			
+		}
+		
+		if (__numClipRects > 0) {
+			
+			__numClipRects = 0;
+			__scissorRect ();
 			
 		}
 		
@@ -450,28 +421,28 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	private override function __clear ():Void {
 		
-		if (__stage.__transparent) {
+		if (__stage == null || __stage.__transparent) {
 			
-			gl.clearColor (0, 0, 0, 0);
+			__gl.clearColor (0, 0, 0, 0);
 			
 		} else {
 			
-			gl.clearColor (__stage.__colorSplit[0], __stage.__colorSplit[1], __stage.__colorSplit[2], 1);
+			__gl.clearColor (__stage.__colorSplit[0], __stage.__colorSplit[1], __stage.__colorSplit[2], 1);
 			
 		}
 		
-		gl.clear (gl.COLOR_BUFFER_BIT);
+		__gl.clear (__gl.COLOR_BUFFER_BIT);
 		
 	}
 	
 	
 	private function __clearShader ():Void {
 		
-		if (__currentGraphicsShader != null) {
+		if (__currentShader != null) {
 			
 			if (__currentShaderBuffer == null) {
 				
-				__currentGraphicsShader.texture0.input = null;
+				if (__currentShader.__bitmap != null) __currentShader.__bitmap.input = null;
 				
 			} else {
 				
@@ -479,20 +450,24 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 				
 			}
 			
-			__currentGraphicsShader.openfl_HasColorTransform.value = null;
-			__currentGraphicsShader.openfl_Position.value = null;
-			__currentGraphicsShader.openfl_Matrix.value = null;
-			__currentGraphicsShader.__clearUseArray ();
-			
-		} else if (__currentDisplayShader != null) {
-			
-			__currentDisplayShader.texture0.input = null;
-			__currentDisplayShader.openfl_HasColorTransform.value = null;
-			__currentDisplayShader.openfl_Position.value = null;
-			__currentDisplayShader.openfl_Matrix.value = null;
-			__currentDisplayShader.__clearUseArray ();
+			if (__currentShader.__texture != null) __currentShader.__texture.input = null;
+			if (__currentShader.__textureSize != null) __currentShader.__textureSize.value = null;
+			if (__currentShader.__hasColorTransform != null) __currentShader.__hasColorTransform.value = null;
+			if (__currentShader.__position != null) __currentShader.__position.value = null;
+			if (__currentShader.__matrix != null) __currentShader.__matrix.value = null;
+			__currentShader.__clearUseArray ();
 			
 		}
+		
+	}
+	
+	
+	private function __copyShader (other:OpenGLRenderer):Void {
+		
+		__currentShader = other.__currentShader;
+		__currentShaderBuffer = other.__currentShaderBuffer;
+		__currentDisplayShader = other.__currentDisplayShader;
+		__currentGraphicsShader = other.__currentGraphicsShader;
 		
 	}
 	
@@ -540,7 +515,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			if (shader.gl == null) {
 				
-				shader.gl = gl;
+				shader.gl = __gl;
 				shader.__init ();
 				
 			}
@@ -555,7 +530,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	private function __initDisplayShader (shader:DisplayObjectShader):DisplayObjectShader {
+	private function __initDisplayShader (shader:Shader):Shader {
 		
 		if (shader != null) {
 			
@@ -563,7 +538,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			if (shader.gl == null) {
 				
-				shader.gl = gl;
+				shader.gl = __gl;
 				shader.__init ();
 				
 			}
@@ -578,7 +553,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	private function __initGraphicsShader (shader:GraphicsShader):GraphicsShader {
+	private function __initGraphicsShader (shader:Shader):Shader {
 		
 		if (shader != null) {
 			
@@ -586,7 +561,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			if (shader.gl == null) {
 				
-				shader.gl = gl;
+				shader.gl = __gl;
 				shader.__init ();
 				
 			}
@@ -601,7 +576,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	private function __initShaderBuffer (shaderBuffer:ShaderBuffer):GraphicsShader {
+	private function __initShaderBuffer (shaderBuffer:ShaderBuffer):Shader {
 		
 		if (shaderBuffer != null) {
 			
@@ -614,83 +589,28 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	private function __getRenderTarget (framebuffer:Bool):Void {
-		
-		if (framebuffer) {
-			
-			if (__renderTargetA == null) {
-				
-				__renderTargetA = BitmapData.fromTexture (__stage.stage3Ds[0].context3D.createRectangleTexture (__width, __height, BGRA, true));
-				
-				gl.bindTexture (gl.TEXTURE_2D, __renderTargetA.getTexture (gl));
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				
-			}
-			
-			if (__renderTargetB == null) {
-				
-				__renderTargetB = BitmapData.fromTexture (__stage.stage3Ds[0].context3D.createRectangleTexture (__width, __height, BGRA, true));
-				
-				gl.bindTexture (gl.TEXTURE_2D, __renderTargetB.getTexture (gl));
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				
-			}
-			
-			if (__currentRenderTarget == __renderTargetA) {
-				
-				__currentRenderTarget = __renderTargetB;
-				
-			} else {
-				
-				__currentRenderTarget = __renderTargetA;
-				
-			}
-			
-			gl.bindFramebuffer (gl.FRAMEBUFFER, __currentRenderTarget.__getFramebuffer (gl));
-			gl.viewport (0, 0, __width, __height);
-			gl.clearColor (0, 0, 0, 0);
-			gl.clear (gl.COLOR_BUFFER_BIT);
-			
-			__flipped = false;
-			
-		} else {
-			
-			__currentRenderTarget = __defaultRenderTarget;
-			var frameBuffer:GLFramebuffer = (__currentRenderTarget != null) ? __currentRenderTarget.__getFramebuffer (gl) : null;
-			
-			gl.bindFramebuffer (gl.FRAMEBUFFER, frameBuffer);
-			
-			__flipped = (__currentRenderTarget == null);
-			
-		}
-		
-	}
-	
-	
 	private override function __popMask ():Void {
 		
 		if (__stencilReference == 0) return;
 		
 		if (__stencilReference > 1) {
 			
-			gl.stencilOp (gl.KEEP, gl.KEEP, gl.DECR);
-			gl.stencilFunc (gl.EQUAL, __stencilReference, 0xFF);
-			gl.colorMask (false, false, false, false);
+			__gl.stencilOp (__gl.KEEP, __gl.KEEP, __gl.DECR);
+			__gl.stencilFunc (__gl.EQUAL, __stencilReference, 0xFF);
+			__gl.colorMask (false, false, false, false);
 			
 			var mask = __maskObjects.pop ();
 			mask.__renderGLMask (this);
 			__stencilReference--;
 			
-			gl.stencilOp (gl.KEEP, gl.KEEP, gl.KEEP);
-			gl.stencilFunc (gl.EQUAL, __stencilReference, 0xFF);
-			gl.colorMask (true, true, true, true);
+			__gl.stencilOp (__gl.KEEP, __gl.KEEP, __gl.KEEP);
+			__gl.stencilFunc (__gl.EQUAL, __stencilReference, 0xFF);
+			__gl.colorMask (true, true, true, true);
 			
 		} else {
 			
 			__stencilReference = 0;
-			gl.disable (gl.STENCIL_TEST);
+			__gl.disable (__gl.STENCIL_TEST);
 			
 		}
 		
@@ -739,23 +659,23 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__stencilReference == 0) {
 			
-			gl.enable (gl.STENCIL_TEST);
-			gl.stencilMask (0xFF);
-			gl.clear (gl.STENCIL_BUFFER_BIT);
+			__gl.enable (__gl.STENCIL_TEST);
+			__gl.stencilMask (0xFF);
+			__gl.clear (__gl.STENCIL_BUFFER_BIT);
 			
 		}
 		
-		gl.stencilOp (gl.KEEP, gl.KEEP, gl.INCR);
-		gl.stencilFunc (gl.EQUAL, __stencilReference, 0xFF);
-		gl.colorMask (false, false, false, false);
+		__gl.stencilOp (__gl.KEEP, __gl.KEEP, __gl.INCR);
+		__gl.stencilFunc (__gl.EQUAL, __stencilReference, 0xFF);
+		__gl.colorMask (false, false, false, false);
 		
 		mask.__renderGLMask (this);
 		__maskObjects.push (mask);
 		__stencilReference++;
 		
-		gl.stencilOp (gl.KEEP, gl.KEEP, gl.KEEP);
-		gl.stencilFunc (gl.EQUAL, __stencilReference, 0xFF);
-		gl.colorMask (true, true, true, true);
+		__gl.stencilOp (__gl.KEEP, __gl.KEEP, __gl.KEEP);
+		__gl.stencilFunc (__gl.EQUAL, __stencilReference, 0xFF);
+		__gl.colorMask (true, true, true, true);
 		
 	}
 	
@@ -787,8 +707,12 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 		}
 		
+		var _matrix = Matrix.__pool.get ();
+		_matrix.copyFrom (transform);
+		_matrix.concat (__worldTransform);
+		
 		var clipRect = __clipRects[__numClipRects];
-		rect.__transform (clipRect, transform);
+		rect.__transform (clipRect, _matrix);
 		
 		if (__numClipRects > 0) {
 			
@@ -809,6 +733,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 		}
 		
+		Matrix.__pool.release (_matrix);
+		
 		__scissorRect (clipRect);
 		__numClipRects++;
 		
@@ -817,71 +743,96 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	private override function __render (object:IBitmapDrawable):Void {
 		
-		gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
-		
-		__upscaled = (__worldTransform.a != 1 || __worldTransform.d != 1);
-		
-		object.__renderGL (this);
-		
-		if (__offsetX > 0 || __offsetY > 0) {
+		if (__defaultRenderTarget == null) {
 			
-			gl.clearColor (0, 0, 0, 1);
-			gl.enable (gl.SCISSOR_TEST);
+			__gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
 			
-			if (__offsetX > 0) {
+			__upscaled = (__worldTransform.a != 1 || __worldTransform.d != 1);
+			
+			object.__renderGL (this);
+			
+			if (__offsetX > 0 || __offsetY > 0) {
 				
-				gl.scissor (0, 0, __offsetX, __height);
-				gl.clear (gl.COLOR_BUFFER_BIT);
+				__gl.clearColor (0, 0, 0, 1);
+				__gl.enable (__gl.SCISSOR_TEST);
 				
-				gl.scissor (__offsetX + __displayWidth, 0, __width, __height);
-				gl.clear (gl.COLOR_BUFFER_BIT);
+				if (__offsetX > 0) {
+					
+					__gl.scissor (0, 0, __offsetX, __height);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					
+					__gl.scissor (__offsetX + __displayWidth, 0, __width, __height);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					
+				}
+				
+				if (__offsetY > 0) {
+					
+					__gl.scissor (0, 0, __width, __offsetY);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					
+					__gl.scissor (0, __offsetY + __displayHeight, __width, __height);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					
+				}
+				
+				__gl.disable (__gl.SCISSOR_TEST);
 				
 			}
 			
-			if (__offsetY > 0) {
-				
-				gl.scissor (0, 0, __width, __offsetY);
-				gl.clear (gl.COLOR_BUFFER_BIT);
-				
-				gl.scissor (0, __offsetY + __displayHeight, __width, __height);
-				gl.clear (gl.COLOR_BUFFER_BIT);
-				
-			}
+		} else {
 			
-			gl.disable (gl.SCISSOR_TEST);
+			__gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
+			
+			// __upscaled = (__worldTransform.a != 1 || __worldTransform.d != 1);
+			
+			// TODO: Cleaner approach?
+			
+			var cacheMask = object.__mask;
+			var cacheScrollRect = object.__scrollRect;
+			object.__mask = null;
+			object.__scrollRect = null;
+			
+			object.__renderGL (this);
+			
+			object.__mask = cacheMask;
+			object.__scrollRect = cacheScrollRect;
 			
 		}
 		
 	}
 	
 	
-	private function __renderFilterPass (target:BitmapData, shader:DisplayObjectShader):Void {
+	private function __renderFilterPass (source:BitmapData, shader:Shader, clear:Bool = true):Void {
 		
-		// if (target == null || shader == null) return;
+		if (source == null || shader == null) return;
+		if (__defaultRenderTarget == null) return;
 		
-		// shader.texture0.input = target;
-		// shader.texture0.smoothing = renderer.__allowSmoothing && (renderer.upscaled);
-		// shader.openfl_Matrix.value = renderer.__getMatrix (matrix);
+		__gl.bindFramebuffer (__gl.FRAMEBUFFER, __defaultRenderTarget.__getFramebuffer (__gl));
 		
-		// if (shader.openfl_HasColorTransform != null) {
-		// 	if (shader.openfl_HasColorTransform.value == null) shader.openfl_HasColorTransform.value = [];
-		// 	shader.openfl_HasColorTransform.value[0] = false;
-		// }
+		if (clear) {
+			
+			__gl.clearColor (0, 0, 0, 0);
+			__gl.clear (__gl.COLOR_BUFFER_BIT);
+			
+		}
 		
-		// var shaderManager:GLShaderManager = cast renderer.shaderManager;
-		// shaderManager.setShader (shader);
+		var shader = __initShader (shader);
+		setShader (shader);
+		applyAlpha (1);
+		applyBitmapData (source, false);
+		applyColorTransform (null);
+		applyMatrix (__getMatrix (source.__renderTransform));
+		updateShader ();
 		
-		// gl.bindBuffer (gl.ARRAY_BUFFER, target.getBuffer (gl));
+		__gl.bindBuffer (__gl.ARRAY_BUFFER, source.getBuffer (__gl));
+		if (shader.__position != null) __gl.vertexAttribPointer (shader.__position.index, 3, __gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
+		if (shader.__textureCoord != null) __gl.vertexAttribPointer (shader.__textureCoord.index, 2, __gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+		__gl.drawArrays (__gl.TRIANGLE_STRIP, 0, 4);
 		
-		// gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
-		// gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
-		// // gl.vertexAttribPointer (shader.aAlpha.index, 1, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 5 * Float32Array.BYTES_PER_ELEMENT);
+		__gl.bindFramebuffer (__gl.FRAMEBUFFER, null);
 		
-		// gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
-		
-		// #if gl_stats
-		// 	GLStats.incrementDrawCall (DrawCallContext.STAGE);
-		// #end
+		__clearShader ();
 		
 	}
 	
@@ -902,49 +853,13 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		__width = width;
 		__height = height;
 		
-		// if (cacheObject == null || cacheObject.width != width || cacheObject.height != height) {
-			
-		// 	cacheObject = BitmapData.fromTexture (stage.stage3Ds[0].context3D.createRectangleTexture (width, height, BGRA, true));
-			
-		// 	gl.bindTexture (gl.TEXTURE_2D, cacheObject.getTexture (gl));
-		// 	gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		// 	gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			
-		// }
-		
-		if (__width > 0 && __height > 0) {
-			
-			if (__renderTargetA != null && (__renderTargetA.width != __width || __renderTargetA.height != __height)) {
-				
-				__renderTargetA = BitmapData.fromTexture (__stage.stage3Ds[0].context3D.createRectangleTexture (__width, __height, BGRA, true));
-				
-				gl.bindTexture (gl.TEXTURE_2D, __renderTargetA.getTexture (gl));
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				
-			}
-			
-			if (__renderTargetB != null && (__renderTargetB.width != __width || __renderTargetB.height != __height)) {
-				
-				__renderTargetB = BitmapData.fromTexture (__stage.stage3Ds[0].context3D.createRectangleTexture (__width, __height, BGRA, true));
-				
-				gl.bindTexture (gl.TEXTURE_2D, __renderTargetB.getTexture (gl));
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				
-			}
-			
-		}
-		
-		// displayMatrix = (defaultRenderTarget == null) ? stage.__displayMatrix : new Matrix ();
-		
 		var w = (__defaultRenderTarget == null) ? __stage.stageWidth : __defaultRenderTarget.width;
 		var h = (__defaultRenderTarget == null) ? __stage.stageHeight : __defaultRenderTarget.height;
 		
-		__offsetX = Math.round (__worldTransform.__transformX (0, 0));
-		__offsetY = Math.round (__worldTransform.__transformY (0, 0));
-		__displayWidth = Math.round (__worldTransform.__transformX (w, 0) - __offsetX);
-		__displayHeight = Math.round (__worldTransform.__transformY (0, h) - __offsetY);
+		__offsetX = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformX (0, 0)) : 0;
+		__offsetY = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformY (0, 0)) : 0;
+		__displayWidth = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformX (w, 0) - __offsetX) : w;
+		__displayHeight = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformY (0, h) - __offsetY) : h;
 		
 		__projection = Matrix4.createOrtho (__offsetX, __displayWidth + __offsetX, __offsetY, __displayHeight + __offsetY, -1000, 1000);
 		__projectionFlipped = Matrix4.createOrtho (__offsetX, __displayWidth + __offsetX, __displayHeight + __offsetY, __offsetY, -1000, 1000);
@@ -952,28 +867,42 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	private function __scissorRect (rect:Rectangle = null):Void {
+	private function __resumeClipAndMask ():Void {
 		
-		if (rect != null) {
+		if (__stencilReference > 0) {
 			
-			gl.enable (gl.SCISSOR_TEST);
+			__gl.enable (__gl.STENCIL_TEST);
 			
-			var clipRect = __tempRect;
-			rect.__transform (clipRect, __worldTransform);
+		}
+		
+		if (__numClipRects > 0) {
+			
+			__scissorRect (__clipRects[__numClipRects - 1]);
+			
+		}
+		
+	}
+	
+	
+	private function __scissorRect (clipRect:Rectangle = null):Void {
+		
+		if (clipRect != null) {
+			
+			__gl.enable (__gl.SCISSOR_TEST);
 			
 			var x = Math.floor (clipRect.x);
-			var y = Math.floor (__height - clipRect.y - clipRect.height);
+			var y = __flipped ? Math.floor (__height - clipRect.y - clipRect.height) : Math.floor (clipRect.y);
 			var width = Math.ceil (clipRect.width);
 			var height = Math.ceil (clipRect.height);
 			
 			if (width < 0) width = 0;
 			if (height < 0) height = 0;
 			
-			gl.scissor (x, y, width, height);
+			__gl.scissor (x, y, width, height);
 			
 		} else {
 			
-			gl.disable (gl.SCISSOR_TEST);
+			__gl.disable (__gl.SCISSOR_TEST);
 			
 		}
 		
@@ -990,40 +919,54 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			case ADD:
 				
-				gl.blendEquation (gl.FUNC_ADD);
-				gl.blendFunc (gl.ONE, gl.ONE);
+				__gl.blendEquation (__gl.FUNC_ADD);
+				__gl.blendFunc (__gl.ONE, __gl.ONE);
 			
 			case MULTIPLY:
 				
-				gl.blendEquation (gl.FUNC_ADD);
-				gl.blendFunc (gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA);
+				__gl.blendEquation (__gl.FUNC_ADD);
+				__gl.blendFunc (__gl.DST_COLOR, __gl.ONE_MINUS_SRC_ALPHA);
 			
 			case SCREEN:
 				
-				gl.blendEquation (gl.FUNC_ADD);
-				gl.blendFunc (gl.ONE, gl.ONE_MINUS_SRC_COLOR);
+				__gl.blendEquation (__gl.FUNC_ADD);
+				__gl.blendFunc (__gl.ONE, __gl.ONE_MINUS_SRC_COLOR);
 			
 			case SUBTRACT:
 				
-				gl.blendEquation (gl.FUNC_REVERSE_SUBTRACT);
-				gl.blendFunc (gl.ONE, gl.ONE);
+				__gl.blendEquation (__gl.FUNC_REVERSE_SUBTRACT);
+				__gl.blendFunc (__gl.ONE, __gl.ONE);
 			
 			#if desktop
 			case DARKEN:
 				
-				gl.blendEquation (0x8007); // GL_MIN
-				gl.blendFunc (gl.ONE, gl.ONE);
+				__gl.blendEquation (0x8007); // GL_MIN
+				__gl.blendFunc (__gl.ONE, __gl.ONE);
 				
 			case LIGHTEN:
 				
-				gl.blendEquation (0x8008); // GL_MAX
-				gl.blendFunc (gl.ONE, gl.ONE);
+				__gl.blendEquation (0x8008); // GL_MAX
+				__gl.blendFunc (__gl.ONE, __gl.ONE);
 			#end
 			
 			default:
 				
-				gl.blendEquation (gl.FUNC_ADD);
-				gl.blendFunc (gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+				__gl.blendEquation (__gl.FUNC_ADD);
+				__gl.blendFunc (__gl.ONE, __gl.ONE_MINUS_SRC_ALPHA);
+			
+		}
+		
+	}
+	
+	
+	private function __setRenderTarget (renderTarget:BitmapData):Void {
+		
+		__defaultRenderTarget = renderTarget;
+		__flipped = (renderTarget == null);
+		
+		if (renderTarget != null) {
+			
+			__resize (renderTarget.width, renderTarget.height);
 			
 		}
 		
@@ -1034,6 +977,23 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		setShader (shaderBuffer.shader);
 		__currentShaderBuffer = shaderBuffer;
+		
+	}
+	
+	
+	private function __suspendClipAndMask ():Void {
+		
+		if (__stencilReference > 0) {
+			
+			__gl.disable (__gl.STENCIL_TEST);
+			
+		}
+		
+		if (__numClipRects > 0) {
+			
+			__scissorRect ();
+			
+		}
 		
 	}
 	

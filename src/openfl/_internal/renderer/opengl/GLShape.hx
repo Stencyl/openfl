@@ -22,6 +22,7 @@ import openfl._internal.renderer.opengl.stats.DrawCallContext;
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Graphics)
+@:access(openfl.display.Shader)
 @:access(openfl.filters.BitmapFilter)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
@@ -48,10 +49,10 @@ class GLShape {
 			
 			if (graphics.__bitmap != null && graphics.__visible) {
 				
-				var gl = renderer.gl;
+				var gl = renderer.__gl;
 				
-				var shader = renderer.__initDisplayShader (shape.__worldRenderShader);
-				renderer.setDisplayShader (shader);
+				var shader = renderer.__initDisplayShader (cast shape.__worldShader);
+				renderer.setShader (shader);
 				renderer.applyBitmapData (graphics.__bitmap, renderer.__allowSmoothing);
 				renderer.applyMatrix (renderer.__getMatrix (graphics.__worldTransform));
 				renderer.applyAlpha (shape.__worldAlpha);
@@ -59,8 +60,8 @@ class GLShape {
 				renderer.updateShader ();
 				
 				gl.bindBuffer (gl.ARRAY_BUFFER, graphics.__bitmap.getBuffer (gl));
-				gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
-				gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+				if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
+				if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
 				gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
 				
 				#if gl_stats
@@ -93,7 +94,7 @@ class GLShape {
 			
 			if (graphics.__bitmap != null) {
 				
-				var gl = renderer.gl;
+				var gl = renderer.__gl;
 				
 				var shader = renderer.__maskShader;
 				renderer.setShader (shader);
@@ -102,8 +103,8 @@ class GLShape {
 				renderer.updateShader ();
 				
 				gl.bindBuffer (gl.ARRAY_BUFFER, graphics.__bitmap.getBuffer (gl));
-				gl.vertexAttribPointer (shader.openfl_Position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
-				gl.vertexAttribPointer (shader.openfl_TexCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+				gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
+				gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
 				gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
 				
 				#if gl_stats

@@ -50,7 +50,6 @@ import js.html.CanvasRenderingContext2D;
 	private static var maxTextureHeight:Null<Int> = null;
 	private static var maxTextureWidth:Null<Int> = null;
 	
-	private var __bitmapFill:BitmapData;
 	private var __bounds:Rectangle;
 	private var __buffer:GLBuffer;
 	private var __bufferContext:GLRenderContext;
@@ -110,7 +109,6 @@ import js.html.CanvasRenderingContext2D;
 		__commands.beginBitmapFill (bitmap, matrix != null ? matrix.clone () : null, repeat, smooth);
 		
 		__visible = true;
-		__bitmapFill = bitmap;
 		
 	}
 	
@@ -120,12 +118,39 @@ import js.html.CanvasRenderingContext2D;
 		__commands.beginFill (color & 0xFFFFFF, alpha);
 		
 		if (alpha > 0) __visible = true;
-		__bitmapFill = null;
 		
 	}
 	
 	
 	public function beginGradientFill (type:GradientType, colors:Array<Int>, alphas:Array<Float>, ratios:Array<Int>, matrix:Matrix = null, spreadMethod:SpreadMethod = SpreadMethod.PAD, interpolationMethod:InterpolationMethod = InterpolationMethod.RGB, focalPointRatio:Float = 0):Void {
+		
+		if (colors == null || colors.length == 0) return;
+		
+		if (alphas == null) {
+			
+			alphas = [];
+			
+			for (i in 0...colors.length) {
+				
+				alphas.push (1);
+				
+			}
+			
+		}
+		
+		if (ratios == null) {
+			
+			ratios = [];
+			
+			for (i in 0...colors.length) {
+				
+				ratios.push (Math.ceil ((i / colors.length) * 255));
+				
+			}
+			
+		}
+		
+		if (alphas.length < colors.length || ratios.length < colors.length) return;
 		
 		__commands.beginGradientFill (type, colors, alphas, ratios, matrix, spreadMethod, interpolationMethod, focalPointRatio);
 		
@@ -140,22 +165,18 @@ import js.html.CanvasRenderingContext2D;
 			
 		}
 		
-		__bitmapFill = null;
-		
 	}
 	
 	
-	public function beginShaderFill (shader:GraphicsShader, matrix:Matrix = null):Void {
-		
-		var shaderBuffer = __shaderBufferPool.get ();
-		__usedShaderBuffers.add (shaderBuffer);
-		shaderBuffer.update (shader);
-		
-		__commands.beginShaderFill (shaderBuffer);
+	public function beginShaderFill (shader:Shader, matrix:Matrix = null):Void {
 		
 		if (shader != null) {
 			
-			__bitmapFill = shader.texture0.input;
+			var shaderBuffer = __shaderBufferPool.get ();
+			__usedShaderBuffers.add (shaderBuffer);
+			shaderBuffer.update (cast shader);
+			
+			__commands.beginShaderFill (shaderBuffer);
 			
 		}
 		
@@ -510,7 +531,7 @@ import js.html.CanvasRenderingContext2D;
 	
 	public function drawQuads (rects:Vector<Float>, indices:Vector<Int> = null, transforms:Vector<Float> = null):Void {
 		
-		if (rects == null || __bitmapFill == null) return;
+		if (rects == null) return;
 		
 		var hasIndices = (indices != null);
 		var transformABCD = false, transformXY = false;
@@ -1096,7 +1117,7 @@ import js.html.CanvasRenderingContext2D;
 	}
 	
 	
-	private function __update ():Void {
+	private function __update (displayMatrix:Matrix):Void {
 		
 		if (__bounds == null || __bounds.width <= 0 || __bounds.height <= 0) return;
 		
@@ -1128,6 +1149,30 @@ import js.html.CanvasRenderingContext2D;
 		} else {
 			
 			return;
+			
+		}
+		
+		if (displayMatrix != null) {
+			
+			if (displayMatrix.b == 0) {
+				
+				scaleX *= displayMatrix.a;
+				
+			} else {
+				
+				scaleX *= Math.sqrt (displayMatrix.a * displayMatrix.a + displayMatrix.b * displayMatrix.b);
+				
+			}
+			
+			if (displayMatrix.c == 0) {
+				
+				scaleY *= displayMatrix.d;
+				
+			} else {
+				
+				scaleY *= Math.sqrt (displayMatrix.c * displayMatrix.c + displayMatrix.d * displayMatrix.d);
+				
+			}
 			
 		}
 		
@@ -1187,8 +1232,8 @@ import js.html.CanvasRenderingContext2D;
 		__renderTransform.ty = __worldTransform.__transformInverseY (tx, ty);
 		
 		// Calculate the size to contain the graphics and the extra subpixel
-		var newWidth  = Math.ceil(width  + __renderTransform.tx);
-		var newHeight = Math.ceil(height + __renderTransform.ty);
+		var newWidth  = Math.ceil (width  + __renderTransform.tx);
+		var newHeight = Math.ceil (height + __renderTransform.ty);
 		
 		// Mark dirty if render size changed
 		if (newWidth != __width || newHeight != __height) {

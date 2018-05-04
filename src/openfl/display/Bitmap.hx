@@ -66,19 +66,11 @@ class Bitmap extends DisplayObject {
 	
 	private override function __enterFrame (deltaTime:Int):Void {
 		
-		// TODO: Do not set as dirty for DOM render
-		
-		// #if (!js || !dom)
-		if (__bitmapData != null && __bitmapData.image != null) {
+		if (__bitmapData != null && __bitmapData.image != null && __bitmapData.image.version != __imageVersion) {
 			
-			var image = __bitmapData.image;
-			if (__bitmapData.image.version != __imageVersion) {
-				__setRenderDirty ();
-				__imageVersion = image.version;
-			}
+			__setRenderDirty ();
 			
 		}
-		// #end
 		
 	}
 	
@@ -155,6 +147,12 @@ class Bitmap extends DisplayObject {
 	
 	private override function __renderCairo (renderer:CairoRenderer):Void {
 		
+		if (__bitmapData != null && __bitmapData.image != null) {
+			
+			__imageVersion = __bitmapData.image.version;
+			
+		}
+		
 		#if lime_cairo
 		__updateCacheBitmap (renderer, !__worldColorTransform.__isDefault ());
 		
@@ -182,6 +180,12 @@ class Bitmap extends DisplayObject {
 	
 	
 	private override function __renderCanvas (renderer:CanvasRenderer):Void {
+		
+		if (__bitmapData != null && __bitmapData.image != null) {
+			
+			__imageVersion = __bitmapData.image.version;
+			
+		}
 		
 		__updateCacheBitmap (renderer, !__worldColorTransform.__isDefault ());
 		
@@ -238,6 +242,12 @@ class Bitmap extends DisplayObject {
 	
 	private override function __renderGL (renderer:OpenGLRenderer):Void {
 		
+		if (__bitmapData != null && __bitmapData.image != null) {
+			
+			__imageVersion = __bitmapData.image.version;
+			
+		}
+		
 		__updateCacheBitmap (renderer, false);
 		
 		if (__cacheBitmap != null && !__isCacheBitmapRender) {
@@ -264,7 +274,7 @@ class Bitmap extends DisplayObject {
 	
 	private override function __updateCacheBitmap (renderer:DisplayObjectRenderer, force:Bool):Bool {
 		
-		if (__filters == null) return false;
+		if (__filters == null && renderer.__type == OPENGL) return false;
 		return super.__updateCacheBitmap (renderer, force);
 		
 	}
@@ -316,7 +326,7 @@ class Bitmap extends DisplayObject {
 		
 		__setRenderDirty ();
 		
-		if (__filters != null && __filters.length > 0) {
+		if (__filters != null) {
 			
 			//__updateFilters = true;
 			

@@ -16,6 +16,7 @@ import lime.ui.JoystickHatPosition;
 import lime.ui.KeyCode;
 import lime.ui.KeyModifier;
 import lime.ui.Mouse in LimeMouse;
+import lime.ui.MouseCursor in LimeMouseCursor;
 import lime.ui.Window;
 import lime.utils.Log;
 import openfl._internal.TouchData;
@@ -108,7 +109,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 	private var __colorString:String;
 	private var __contentsScaleFactor:Float;
 	#if (commonjs && !nodejs)
-	private var __cursor:MouseCursor;
+	private var __cursor:LimeMouseCursor;
 	#end
 	private var __deltaTime:Int;
 	private var __dirty:Bool;
@@ -311,10 +312,9 @@ class Stage extends DisplayObjectContainer implements IModule {
 			
 		}
 		
-		Application.current.addModule (this);
-		
 		if (app != null) {
 			
+			app.addModule (this);
 			app.exec ();
 			
 		}
@@ -324,6 +324,8 @@ class Stage extends DisplayObjectContainer implements IModule {
 	
 	
 	@:noCompletion public function addRenderer (renderer:Renderer):Void {
+		
+		if (this.window == null || this.window.renderer != renderer) return;
 		
 		renderer.onRender.add (render.bind (renderer));
 		renderer.onContextLost.add (onRenderContextLost.bind (renderer));

@@ -3,6 +3,9 @@ package openfl._internal.renderer;
 
 import lime.graphics.opengl.GLBuffer;
 import lime.utils.Float32Array;
+import openfl.display3D.Context3DMipFilter;
+import openfl.display3D.Context3DTextureFilter;
+import openfl.display3D.Context3DWrapMode;
 import openfl.display.BitmapData;
 import openfl.display.GraphicsShader;
 import openfl.display.Shader;
@@ -22,15 +25,20 @@ class ShaderBuffer {
 	
 	public var inputCount:Int;
 	public var inputRefs:Array<ShaderInput<BitmapData>>;
-	public var inputSmoothing:Array<Bool>;
+	public var inputFilter:Array<Context3DTextureFilter>;
+	public var inputMipFilter:Array<Context3DMipFilter>;
 	public var inputs:Array<BitmapData>;
+	public var inputWrap:Array<Context3DWrapMode>;
 	public var overrideCount:Int;
 	public var overrideNames:Array<String>;
 	public var overrideValues:Array<Array<Dynamic>>;
+	public var paramBoolCount:Int;
 	public var paramCount:Int;
 	public var paramData:Float32Array;
 	public var paramDataBuffer:GLBuffer;
 	public var paramDataLength:Int;
+	public var paramFloatCount:Int;
+	public var paramIntCount:Int;
 	public var paramLengths:Array<Int>;
 	public var paramPositions:Array<Int>;
 	public var paramRefs_Bool:Array<ShaderParameter<Bool>>;
@@ -43,8 +51,10 @@ class ShaderBuffer {
 	public function new () {
 		
 		inputRefs = [];
-		inputSmoothing = [];
+		inputFilter = [];
+		inputMipFilter = [];
 		inputs = [];
+		inputWrap = [];
 		overrideNames = [];
 		overrideValues = [];
 		paramLengths = [];
@@ -75,8 +85,14 @@ class ShaderBuffer {
 	
 	public function update (shader:GraphicsShader):Void {
 		
+		inputCount = 0;
 		overrideCount = 0;
+		paramBoolCount = 0;
+		paramCount = 0;
 		paramDataLength = 0;
+		paramFloatCount = 0;
+		paramIntCount = 0;
+		this.shader = null;
 		
 		if (shader == null) return;
 		
@@ -89,8 +105,10 @@ class ShaderBuffer {
 			
 			input = shader.__inputBitmapData[i];
 			inputs[i] = input.input;
-			inputSmoothing[i] = input.smoothing;
+			inputFilter[i] = input.filter;
+			inputMipFilter[i] = input.mipFilter;
 			inputRefs[i] = input;
+			inputWrap[i] = input.wrap;
 			
 		}
 		
@@ -98,6 +116,9 @@ class ShaderBuffer {
 		var floatCount = shader.__paramFloat.length;
 		var intCount = shader.__paramInt.length;
 		paramCount = boolCount + floatCount + intCount;
+		paramBoolCount = boolCount;
+		paramFloatCount = floatCount;
+		paramIntCount = intCount;
 		
 		var paramLength = 0;
 		var length = 0, p = 0;
@@ -171,9 +192,6 @@ class ShaderBuffer {
 		var boolIndex = 0;
 		var floatIndex = 0;
 		var intIndex = 0;
-		
-		var boolCount = paramRefs_Bool.length;
-		var floatCount = paramRefs_Float.length;
 		
 		var paramPosition:Int = 0;
 		var boolParam, floatParam, intParam, length;

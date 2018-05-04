@@ -37,18 +37,26 @@ class Shader {
 	
 	private var gl:GLRenderContext;
 	
+	private var __alpha:ShaderParameter<Float>;
+	private var __bitmap:ShaderInput<BitmapData>;
+	private var __colorMultiplier:ShaderParameter<Float>;
+	private var __colorOffset:ShaderParameter<Float>;
 	private var __data:ShaderData;
 	private var __glFragmentSource:String;
 	private var __glSourceDirty:Bool;
 	private var __glVertexSource:String;
+	private var __hasColorTransform:ShaderParameter<Bool>;
 	private var __inputBitmapData:Array<ShaderInput<BitmapData>>;
-	private var __isDisplayShader:Bool;
 	private var __isGenerated:Bool;
-	private var __isGraphicsShader:Bool;
+	private var __matrix:ShaderParameter<Float>;
 	private var __numPasses:Int;
 	private var __paramBool:Array<ShaderParameter<Bool>>;
 	private var __paramFloat:Array<ShaderParameter<Float>>;
 	private var __paramInt:Array<ShaderParameter<Int>>;
+	private var __position:ShaderParameter<Float>;
+	private var __textureCoord:ShaderParameter<Float>;
+	private var __texture:ShaderInput<BitmapData>;
+	private var __textureSize:ShaderParameter<Float>;
 	
 	
 	#if openfljs
@@ -165,6 +173,7 @@ class Shader {
 			
 			var message = (type == gl.VERTEX_SHADER) ? "Error compiling vertex shader" : "Error compiling fragment shader";
 			message += "\n" + gl.getShaderInfoLog (shader);
+			message += "\n" + source;
 			Log.error (message);
 			
 		}
@@ -278,8 +287,12 @@ class Shader {
 		
 		for (input in __inputBitmapData) {
 			
-			gl.uniform1i (input.index, textureCount);
-			textureCount++;
+			if (input.input != null) {
+				
+				gl.uniform1i (input.index, textureCount);
+				textureCount++;
+				
+			}
 			
 		}
 		
@@ -329,14 +342,17 @@ class Shader {
 		
 		if (gl != null && glProgram == null) {
 			
-			var fragment = 
+			var prefix = 
 				
 				"#ifdef GL_ES
 				precision " + (precisionHint == FULL ? "mediump" : "lowp") + " float;
 				#endif
-				" + glFragmentSource;
+				";
 			
-			var id = fragment + glVertexSource;
+			var vertex = prefix + glVertexSource;
+			var fragment = prefix + glFragmentSource;
+			
+			var id = vertex + fragment;
 			
 			if (__glPrograms.exists (id)) {
 				
@@ -344,7 +360,7 @@ class Shader {
 				
 			} else {
 				
-				glProgram = __createGLProgram (glVertexSource, fragment);
+				glProgram = __createGLProgram (vertex, fragment);
 				__glPrograms.set (id, glProgram);
 				
 			}
@@ -447,6 +463,15 @@ class Shader {
 				input.name = name;
 				input.__isUniform = isUniform;
 				__inputBitmapData.push (input);
+				
+				switch (name) {
+					
+					case "openfl_Texture": __texture = input;
+					case "bitmap": __bitmap = input;
+					default:
+					
+				}
+				
 				Reflect.setField (__data, name, input);
 				if (__isGenerated) Reflect.setField (this, name, input);
 				
@@ -511,6 +536,13 @@ class Shader {
 						parameter.__isUniform = isUniform;
 						parameter.__length = length;
 						__paramBool.push (parameter);
+						
+						if (name == "openfl_HasColorTransform") {
+							
+							__hasColorTransform = parameter;
+							
+						}
+						
 						Reflect.setField (__data, name, parameter);
 						if (__isGenerated) Reflect.setField (this, name, parameter);
 					
@@ -538,6 +570,24 @@ class Shader {
 						parameter.__isUniform = isUniform;
 						parameter.__length = length;
 						__paramFloat.push (parameter);
+						
+						if (StringTools.startsWith (name, "openfl_")) {
+							
+							switch (name) {
+								
+								case "openfl_Alpha": __alpha = parameter;
+								case "openfl_ColorMultiplier": __colorMultiplier = parameter;
+								case "openfl_ColorOffset": __colorOffset = parameter;
+								case "openfl_Matrix": __matrix = parameter;
+								case "openfl_Position": __position = parameter;
+								case "openfl_TextureCoord": __textureCoord = parameter;
+								case "openfl_TextureSize": __textureSize = parameter;
+								default:
+								
+							}
+							
+						}
+						
 						Reflect.setField (__data, name, parameter);
 						if (__isGenerated) Reflect.setField (this, name, parameter);
 					
@@ -581,8 +631,12 @@ class Shader {
 		
 		for (input in __inputBitmapData) {
 			
-			input.__updateGL (gl, textureCount);
-			textureCount++;
+			if (input.input != null) {
+				
+				input.__updateGL (gl, textureCount);
+				textureCount++;
+				
+			}
 			
 		}
 		
@@ -610,16 +664,22 @@ class Shader {
 	private function __updateGLFromBuffer (shaderBuffer:ShaderBuffer):Void {
 		
 		var textureCount = 0;
-		var input, inputData, inputSmoothing;
+		var input, inputData, inputFilter, inputMipFilter, inputWrap;
 		
 		for (i in 0...shaderBuffer.inputCount) {
 			
 			input = shaderBuffer.inputRefs[i];
 			inputData = shaderBuffer.inputs[i];
-			inputSmoothing = shaderBuffer.inputSmoothing[i];
+			inputFilter = shaderBuffer.inputFilter[i];
+			inputMipFilter = shaderBuffer.inputMipFilter[i];
+			inputWrap = shaderBuffer.inputWrap[i];
 			
-			input.__updateGL (gl, textureCount, inputData, inputSmoothing);
-			textureCount++;
+			if (inputData != null) {
+				
+				input.__updateGL (gl, textureCount, inputData, inputFilter, inputMipFilter, inputWrap);
+				textureCount++;
+				
+			}
 			
 		}
 		
@@ -631,14 +691,14 @@ class Shader {
 				
 			}
 			
-			Log.verbose ("bind param data buffer (length: " + shaderBuffer.paramData.length + ") (" + shaderBuffer.paramCount + ")");
+			//Log.verbose ("bind param data buffer (length: " + shaderBuffer.paramData.length + ") (" + shaderBuffer.paramCount + ")");
 			
 			gl.bindBuffer (gl.ARRAY_BUFFER, shaderBuffer.paramDataBuffer);
 			(gl:WebGLContext).bufferData (gl.ARRAY_BUFFER, shaderBuffer.paramData, gl.DYNAMIC_DRAW);
 			
 		} else {
 			
-			Log.verbose ("bind buffer null");
+			//Log.verbose ("bind buffer null");
 			
 			gl.bindBuffer (gl.ARRAY_BUFFER, null);
 			
@@ -648,8 +708,8 @@ class Shader {
 		var floatIndex = 0;
 		var intIndex = 0;
 		
-		var boolCount = shaderBuffer.paramRefs_Bool.length;
-		var floatCount = shaderBuffer.paramRefs_Float.length;
+		var boolCount = shaderBuffer.paramBoolCount;
+		var floatCount = shaderBuffer.paramFloatCount;
 		var paramData = shaderBuffer.paramData;
 		
 		var boolRef, floatRef, intRef, hasOverride;
