@@ -1270,7 +1270,13 @@ class CairoGraphics {
 		
 		@:privateAccess graphics.__commands.__endBuffer();
 		
-		if (!graphics.__commands.dirty) return;
+		if (!graphics.__commands.dirty && graphics.__renderTransform.equals(graphics.oldRenderTransform)) {
+		
+			return;
+			
+		}
+		
+		graphics.oldRenderTransform.copyFrom(graphics.__renderTransform);
 		
 		bounds = graphics.__bounds;
 		

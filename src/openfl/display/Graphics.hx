@@ -77,6 +77,7 @@ import js.html.CanvasRenderingContext2D;
 	private var __context:CanvasRenderingContext2D;
 	#else
 	private var __cairo:Cairo;
+	private var oldRenderTransform:Matrix;
 	#end
 	
 	private var __bitmap:BitmapData;
@@ -99,6 +100,8 @@ import js.html.CanvasRenderingContext2D;
 		
 		#if (js && html5)
 		moveTo (0, 0);
+		#else
+		oldRenderTransform = new Matrix ();
 		#end
 		
 	}
