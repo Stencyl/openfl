@@ -349,7 +349,7 @@ class Shader {
 				#endif
 				";
 			
-			var vertex = prefix + glVertexSource;
+			var vertex = "precision highp float;\n" + glVertexSource;
 			var fragment = prefix + glFragmentSource;
 			
 			var id = vertex + fragment;
