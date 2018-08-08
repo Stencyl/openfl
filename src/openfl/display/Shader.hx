@@ -342,15 +342,21 @@ class Shader {
 		
 		if (gl != null && glProgram == null) {
 			
-			var prefix = 
+			var vertex =
+
+				"#ifdef GL_ES
+				precision highp float;
+				#endif
+
+				" + glVertexSource;
+
+			var fragment = 
 				
 				"#ifdef GL_ES
 				precision " + (precisionHint == FULL ? "mediump" : "lowp") + " float;
 				#endif
-				";
-			
-			var vertex = "precision highp float;\n" + glVertexSource;
-			var fragment = prefix + glFragmentSource;
+				
+				" + glFragmentSource;
 			
 			var id = vertex + fragment;
 			
