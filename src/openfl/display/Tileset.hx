@@ -22,12 +22,12 @@ class Tileset {
 	public var rectData:Vector<Float>;
 	public var numRects (get, never):Int;
 	
-	private var __bitmapData:BitmapData;
-	private var __data:Array<TileData>;
+	@:noCompletion private var __bitmapData:BitmapData;
+	@:noCompletion private var __data:Array<TileData>;
 	
 	
 	#if openfljs
-	private static function __init__ () {
+	@:noCompletion private static function __init__ () {
 		
 		untyped Object.defineProperties (Tileset.prototype, {
 			"bitmapData": { get: untyped __js__ ("function () { return this.get_bitmapData (); }"), set: untyped __js__ ("function (v) { return this.set_bitmapData (v); }") },
@@ -155,14 +155,14 @@ class Tileset {
 	
 	
 	
-	private function get_bitmapData ():BitmapData {
+	@:noCompletion private function get_bitmapData ():BitmapData {
 		
 		return __bitmapData;
 		
 	}
 	
 	
-	private function set_bitmapData (value:BitmapData):BitmapData {
+	@:noCompletion private function set_bitmapData (value:BitmapData):BitmapData {
 		
 		__bitmapData = value;
 		
@@ -175,7 +175,7 @@ class Tileset {
 	}
 	
 	
-	private function get_numRects ():Int {
+	@:noCompletion private function get_numRects ():Int {
 		
 		return __data.length;
 		
@@ -220,14 +220,37 @@ class Tileset {
 	}
 	
 	
-	private function __update (bitmapData:BitmapData):Void {
+	@:noCompletion private function __update (bitmapData:BitmapData):Void {
 		
 		if (bitmapData != null) {
 			
-			__uvX = x / bitmapData.width;
-			__uvY = y / bitmapData.height;
-			__uvWidth = (x + width) / bitmapData.width;
-			__uvHeight = (y + height) / bitmapData.height;
+			var bitmapWidth = bitmapData.width;
+			var bitmapHeight = bitmapData.height;
+			
+			#if (openfl_power_of_two && !flash)
+			var newWidth = 1;
+			var newHeight = 1;
+			
+			while (newWidth < bitmapWidth) {
+				
+				newWidth <<= 1;
+				
+			}
+			
+			while (newHeight < bitmapHeight) {
+				
+				newHeight <<= 1;
+				
+			}
+			
+			bitmapWidth = newWidth;
+			bitmapHeight = newHeight;
+			#end
+			
+			__uvX = x / bitmapWidth;
+			__uvY = y / bitmapHeight;
+			__uvWidth = (x + width) / bitmapWidth;
+			__uvHeight = (y + height) / bitmapHeight;
 			
 			#if flash
 			__bitmapData = new BitmapData (width, height);

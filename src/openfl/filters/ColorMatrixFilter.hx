@@ -1,8 +1,8 @@
-package openfl.filters;
+package openfl.filters; #if !flash
 
 
-import lime.graphics.utils.ImageCanvasUtil;
-import lime.math.color.RGBA;
+import lime._internal.graphics.ImageCanvasUtil; // TODO
+import lime.math.RGBA;
 import openfl.display.BitmapData;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
@@ -18,15 +18,15 @@ import openfl.geom.Rectangle;
 @:final class ColorMatrixFilter extends BitmapFilter {
 	
 	
-	private static var __colorMatrixShader = new ColorMatrixShader ();
+	@:noCompletion private static var __colorMatrixShader = new ColorMatrixShader ();
 	
 	public var matrix (get, set):Array<Float>;
 	
-	private var __matrix:Array<Float>;
+	@:noCompletion private var __matrix:Array<Float>;
 	
 	
 	#if openfljs
-	private static function __init__ () {
+	@:noCompletion private static function __init__ () {
 		
 		untyped Object.defineProperties (ColorMatrixFilter.prototype, {
 			"matrix": { get: untyped __js__ ("function () { return this.get_matrix (); }"), set: untyped __js__ ("function (v) { return this.set_matrix (v); }") },
@@ -55,7 +55,7 @@ import openfl.geom.Rectangle;
 	}
 	
 	
-	private override function __applyFilter (destBitmapData:BitmapData, sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point):BitmapData {
+	@:noCompletion private override function __applyFilter (destBitmapData:BitmapData, sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point):BitmapData {
 		
 		var sourceImage = sourceBitmapData.image; 
 		var image = destBitmapData.image;
@@ -115,7 +115,7 @@ import openfl.geom.Rectangle;
 	}
 	
 	
-	private override function __initShader (renderer:DisplayObjectRenderer, pass:Int):Shader {
+	@:noCompletion private override function __initShader (renderer:DisplayObjectRenderer, pass:Int):Shader {
 		
 		__colorMatrixShader.init (matrix);
 		return __colorMatrixShader;
@@ -130,14 +130,14 @@ import openfl.geom.Rectangle;
 	
 	
 	
-	private function get_matrix ():Array<Float> {
+	@:noCompletion private function get_matrix ():Array<Float> {
 		
 		return __matrix;
 		
 	}
 	
 	
-	private function set_matrix (value:Array<Float>):Array<Float> {
+	@:noCompletion private function set_matrix (value:Array<Float>):Array<Float> {
 		
 		if (value == null) {
 			
@@ -206,6 +206,7 @@ private class ColorMatrixShader extends BitmapFilterShader {
 	
 	public function init (matrix:Array<Float>):Void {
 		
+		#if !macro
 		var multipliers = uMultipliers.value;
 		var offsets = uOffsets.value;
 		
@@ -230,8 +231,14 @@ private class ColorMatrixShader extends BitmapFilterShader {
 		offsets[1] = matrix[9] / 255.0;
 		offsets[2] = matrix[14] / 255.0;
 		offsets[3] = matrix[19] / 255.0;
+		#end
 		
 	}
 	
 	
 }
+
+
+#else
+typedef ColorMatrixFilter = flash.filters.ColorMatrixFilter;
+#end

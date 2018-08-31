@@ -1,7 +1,7 @@
 package openfl._internal.renderer.canvas;
 
 
-import lime.graphics.utils.ImageCanvasUtil;
+import lime._internal.graphics.ImageCanvasUtil; // TODO
 import openfl.display.Bitmap;
 import openfl.display.CanvasRenderer;
 

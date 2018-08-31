@@ -1,13 +1,15 @@
-package openfl.display;
+package openfl.display; #if !flash
 
 
-import lime.graphics.GLRenderContext;
+import openfl.display3D.Context3D;
 import lime.utils.Float32Array;
 
 #if !openfl_debug
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
+
+@:access(openfl.display3D.Context3D)
 
 #if (!js && !display) @:generic #end
 
@@ -20,14 +22,14 @@ import lime.utils.Float32Array;
 	public var type (default, null):ShaderParameterType;
 	public var value:Array<T>;
 	
-	private var __arrayLength:Int;
-	private var __isBool:Bool;
-	private var __isFloat:Bool;
-	private var __isInt:Bool;
-	private var __isUniform:Bool;
-	private var __length:Int;
-	private var __uniformMatrix:Float32Array;
-	private var __useArray:Bool;
+	@:noCompletion private var __arrayLength:Int;
+	@:noCompletion private var __isBool:Bool;
+	@:noCompletion private var __isFloat:Bool;
+	@:noCompletion private var __isInt:Bool;
+	@:noCompletion private var __isUniform:Bool;
+	@:noCompletion private var __length:Int;
+	@:noCompletion private var __uniformMatrix:Float32Array;
+	@:noCompletion private var __useArray:Bool;
 	
 	
 	public function new () {
@@ -37,7 +39,9 @@ import lime.utils.Float32Array;
 	}
 	
 	
-	private function __disableGL (gl:GLRenderContext):Void {
+	@:noCompletion private function __disableGL (context:Context3D):Void {
+		
+		var gl = context.gl;
 		
 		if (!__isUniform) {
 			
@@ -52,7 +56,9 @@ import lime.utils.Float32Array;
 	}
 	
 	
-	private function __updateGL (gl:GLRenderContext, overrideValue:Array<T> = null):Void {
+	@:noCompletion private function __updateGL (context:Context3D, overrideValue:Array<T> = null):Void {
+		
+		var gl = context.gl;
 		
 		var value = overrideValue != null ? overrideValue : this.value;
 		
@@ -79,7 +85,7 @@ import lime.utils.Float32Array;
 						for (i in 0...4) {
 							__uniformMatrix[i] = floatValue[i];
 						}
-						gl.uniformMatrix2fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix2fv (index, false, __uniformMatrix);
 					
 					//case MATRIX2X3:
 					//case MATRIX2X4:
@@ -89,7 +95,7 @@ import lime.utils.Float32Array;
 						for (i in 0...9) {
 							__uniformMatrix[i] = floatValue[i];
 						}
-						gl.uniformMatrix3fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix3fv (index, false, __uniformMatrix);
 					
 					//case MATRIX3X4:
 					//case MATRIX4X2:
@@ -99,7 +105,7 @@ import lime.utils.Float32Array;
 						for (i in 0...16) {
 							__uniformMatrix[i] = floatValue[i];
 						}
-						gl.uniformMatrix4fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix4fv (index, false, __uniformMatrix);
 					
 					case INT: gl.uniform1i (index, intValue[0]);
 					case INT2: gl.uniform2i (index, intValue[0], intValue[1]);
@@ -127,7 +133,7 @@ import lime.utils.Float32Array;
 						for (i in 0...4) {
 							__uniformMatrix[i] = 0;
 						}
-						gl.uniformMatrix2fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix2fv (index, false, __uniformMatrix);
 					
 					//case MATRIX2X3:
 					//case MATRIX2X4:
@@ -137,7 +143,7 @@ import lime.utils.Float32Array;
 						for (i in 0...9) {
 							__uniformMatrix[i] = 0;
 						}
-						gl.uniformMatrix3fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix3fv (index, false, __uniformMatrix);
 					
 					//case MATRIX3X4:
 					//case MATRIX4X2:
@@ -147,7 +153,7 @@ import lime.utils.Float32Array;
 						for (i in 0...16) {
 							__uniformMatrix[i] = 0;
 						}
-						gl.uniformMatrix4fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix4fv (index, false, __uniformMatrix);
 					
 					default:
 					
@@ -244,7 +250,9 @@ import lime.utils.Float32Array;
 	}
 	
 	
-	private function __updateGLFromBuffer (gl:GLRenderContext, buffer:Float32Array, position:Int, length:Int):Void {
+	@:noCompletion private function __updateGLFromBuffer (context:Context3D, buffer:Float32Array, position:Int, length:Int):Void {
+		
+		var gl = context.gl;
 		
 		if (__isUniform) {
 			
@@ -265,7 +273,7 @@ import lime.utils.Float32Array;
 						for (i in 0...4) {
 							__uniformMatrix[i] = buffer[position + i];
 						}
-						gl.uniformMatrix2fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix2fv (index, false, __uniformMatrix);
 					
 					//case MATRIX2X3:
 					//case MATRIX2X4:
@@ -275,7 +283,7 @@ import lime.utils.Float32Array;
 						for (i in 0...9) {
 							__uniformMatrix[i] = buffer[position + i];
 						}
-						gl.uniformMatrix3fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix3fv (index, false, __uniformMatrix);
 					
 					//case MATRIX3X4:
 					//case MATRIX4X2:
@@ -285,7 +293,7 @@ import lime.utils.Float32Array;
 						for (i in 0...16) {
 							__uniformMatrix[i] = buffer[position + i];
 						}
-						gl.uniformMatrix4fv (index, 1, false, __uniformMatrix);
+						gl.uniformMatrix4fv (index, false, __uniformMatrix);
 					
 					default:
 					
@@ -391,3 +399,8 @@ import lime.utils.Float32Array;
 	
 	
 }
+
+
+#else
+typedef ShaderParameter<T> = flash.display.ShaderParameter<T>;
+#end

@@ -1,4 +1,157 @@
-8.0.0 (03/04/2018)
+8.4.1 (08/13/2018)
+------------------
+
+* Fixed an issue where the Flash preloader could dispatch complete multiple times
+* Fixed a regression in processing SWF assets for Haxelib releases
+* Fixed an issue with stenciling on Stage3D projects that use display list masks
+* Fixed the value of `ExternalInterface.objectID` on single HTML5 embeds
+
+
+8.4.0 (08/08/2018)
+------------------
+
+* Updated to Lime 7.0.0 (with backward support for Lime 6.4)
+* Merged doc sources into runtime sources for better display server support
+* Removed generated documentation from NPM releases to make them smaller
+* Added support for `readObject` and `writeObject` in `openfl.net.Socket`
+* Improved native font auto-hinting (disabled when `sharpness = 400`)
+* Improved performance by dispatching mouse move events more sparingly
+* Improved state management between `Stage3D` and display list rendering
+* Improved object cleanup when removing children and using DOM rendering
+* Improved OpenGL rendering when mask objects are on a half-pixel
+* Fixed support for multiple `BitmapData` inputs in a custom shader
+* Fixed GL `cacheAsBitmap` and `bitmapData.draw` rendering that uses masks
+* Fixed `openfl.net.Socket` to not block while connecting
+* Fixed support for `MouseEvent.ROLL_OVER` events when not using `ROLL_OUT`
+* Fixed renderer support for `bitmap.opaqueBackground`
+* Fixed `FullScreenEvent` to dispatch with the proper boolean value
+* Fixed the behavior of `copyColumn` and `copyRow` in `Matrix`
+* Fixed a small memory leak when using multiple textures in GL `Tilemap`
+* Fixed ability to `preventDefault` on `TextEvent.TEXT_INPUT` events
+* Fixed missing dispatch of `TextEvent.TEXT_INPUT` in some cases
+* Fixed minor issues in `textField.getFirstCharInParagraph`
+* Fixed minor issues in `textField.getParagraphLength`
+* Fixed optimizations in `EventDispatcher` if dispatch is re-entrant
+* Fixed missing `Event.ADDED_TO_STAGE` event for SWF-based children
+* Fixed fullscreen exit event to properly dispatch on HTML5 target
+* Fixed minor issues in the behavior of `bitmapData.draw`
+* Fixed `-Dtelemetry` to properly enabled advanced-telemetry on Flash
+* Fixed `loader.loaderInfo.width` and `height` values when loading bitmaps
+* Fixed a regression in setting `stage.color` to 0
+* Fixed the orientation of cube textures in Stage3D
+* Fixed "JPEG-XR+LZMA" warning to output instead of causing an error
+
+
+8.3.0 (06/25/2018)
+------------------
+
+* Added `tile.blendMode` and `tilemap.tileBlendModeEnabled`
+* Added `netStream.dispose()` and improved `netStream.close()` support
+* Improved buffer handling for OpenGL `Tilemap` rendering
+* Fixed default HTML5 template after Chrome passive event listener change
+* Fixed a regression in rendering of `TextFormatAlign.JUSTIFY` text
+* Fixed dispatching of `Event.ADDED_TO_STAGE` on document class in NPM builds
+* Fixed missing `loader.contentLoaderInfo.bytes` field
+* Fixed using `bitmapData.hitTest` against another `BitmapData` object
+* Fixed return value of `eventDispatcher.dispatchEvent()` when default is prevented
+* Fixed timing issue with multiple texture units in custom OpenGL shaders
+* Fixed `MouseEvent.MOUSE_OVER`/`MouseEvent.MOUSE_OUT` to dispatch in each event phase
+* Fixed some issues when using `-Dopenfl-power-of-two` textures
+* Fixed `stage.color` to mark rendering as dirty when changed
+* Fixed `openfl.net.Socket` on HTML5 to allow reading of input later
+
+
+8.2.2 (06/05/2018)
+------------------
+
+* Fixed a regression in the `TextField` input cursor
+
+
+8.2.1 (06/05/2018)
+------------------
+
+* Updated default window color depth to 32-bit (`<window color-depth="16" />` to revert)
+* Updated to create a depth buffer by default (`<window depth-buffer="false" />` to revert)
+* Improved the performance of little endian `ByteArray` `readFloat`/`readDouble`
+* Fixed a regression in the behavior of `textField.getTextFormat`
+* Fixed a regression in Stage3D texture uploads on HTML5
+
+
+8.2.0 (06/01/2018)
+------------------
+
+* Updated to Lime 6.4.*
+* Updated `file-saverjs` dependency on NPM to `file-saver`
+* Updated to avoid `implements Dynamic` since it is being removed in Haxe 4
+* Added ES6 modules (as an alternative to the default CommonJS modules)
+* Added `openfl.utils.setTimeout` on NPM-based builds
+* Added `openfl.utils.Dictionary` for NPM builds
+* Added Gzip and Brotli min.js files for NPM builds
+* Improved the texture size used for rendering `TextField`
+* Improved behavior of `texture.uploadFromBitmapData` when the source is HTML5 canvas
+* Improved compilation on AS3 by including `flash.*` versions of OpenFL types
+* Improved extern types for NPM builds
+* Improved using generated SWF classes with dead-code elimination
+* Fixed initialization of the stencil/depth buffers when using Stage3D
+* Fixed the behavior of `textField.getTextFormat` to handle some edge cases
+* Fixed a regression in software bitmap filters for certain cases
+* Fixed cases where HTML5 would dispatch `MOUSE_LEAVE` instead of `RELEASE_OUTSIDE`
+* Fixed support for `Vector.<T>` on the AS3 target
+* Fixed a possible loop when dispatching `UncaughtErrorEvent` throws an error
+* Fixed `Lib.setTimeout` and `Lib.setInterval` to make the last argument optional
+* Fixed a possible `null` issue when hit-testing within `Sprite`
+* Fixed the default value for `vector.lastIndexOf`
+* Fixed some minor issues when forcing power-of-two textures
+* Fixed some edge cases in justified text word-wrapping
+* Fixed the behavior of the `displayObject.visible` property if it is overridden
+* Fixed behavior of setting Stage3D max anisotropy to invalidate less often
+* Fixed keyboard shortcuts to move text cursor to work only if selectable is true
+* Fixed a regression in the SWF generator when using it from Node.js
+
+
+8.1.1 (05/17/2018)
+------------------
+
+* Fixed minor issues with some ActionScript 3.0 externs
+
+
+8.1.0 (05/16/2018)
+------------------
+
+* Added (initial) support for ActionScript 3.0 as a source language on NPM
+* Fixed inconsistencies in mask shape rendering on the Cairo renderer
+* Fixed some types and behaviors when using the global "openfl.js" library
+
+
+8.0.2 (05/11/2018)
+------------------
+
+* Updated recommended Haxe release to Haxe 3.4.3 or Haxe 4
+* Improved support for pre-processed SWF asset libraries
+* Fixed an issue when clearing `filters` on `Bitmap` and `TextField` objects
+* Fixed `drawQuads` to support `beginFill` in addition to other fill types
+* Fixed the behavior of `Stage3D` scissor to behave better with scaled windows
+* Fixed geometry for `drawQuads` on the Flash renderer
+* Fixed a regression in the behavior of the enter key on input `TextField`
+* Fixed a regression in the behavior of up/down keys in `TextField`
+* Fixed the behavior of inherited `colorTransform` values
+* Fixed support for `beginFill` with `drawTriangles` on the Cairo renderer
+* Fixed the clipping of `Tilemap` bounds on the OpenGL renderer
+
+
+8.0.1 (05/08/2018)
+------------------
+
+* Fixed an issue when filter classes were accessed by the macro context
+* Fixed an issue when using custom shaders with `-dce full`
+* Fixed bounds calculation when using `lineTo` after using `clear`
+* Fixed rendering for `cacheAsBitmap` and `opaqueBackground` together
+* Fixed a possible issue using `cacheAsBitmap` and masks together
+* Fixed an issue rendering a hardware `cacheAsBitmap` object in software
+* Fixed minor issues to improve support for HashLink
+
+
+8.0.0 (05/04/2018)
 ------------------
 
 * Deprecated `DOMSprite`, `OpenGLView` and `TileArray`

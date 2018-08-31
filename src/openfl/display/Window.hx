@@ -2,8 +2,8 @@ package openfl.display;
 
 
 import lime.app.Application;
-import lime.app.Config;
-import lime.ui.Window in LimeWindow;
+import lime.ui.Window as LimeWindow;
+import lime.ui.WindowAttributes;
 import openfl._internal.Lib;
 
 #if !openfl_debug
@@ -18,34 +18,36 @@ import openfl._internal.Lib;
 class Window extends LimeWindow {
 	
 	
-	public function new (config:WindowConfig = null) {
+	@:noCompletion private function new (application:Application, attributes:WindowAttributes) {
 		
-		super (config);
-		
-	}
-	
-	
-	public override function create (application:Application):Void {
-		
-		super.create (application);
+		super (application, attributes);
 		
 		#if (!flash && !macro)
 		
-		stage = new Stage (this, Reflect.hasField (config, "background") ? config.background : 0xFFFFFF);
+		#if commonjs
+		if (Reflect.hasField (attributes, "stage")) {
+			
+			stage = Reflect.field (attributes, "stage");
+			stage.window = this;
+			Reflect.deleteField (attributes, "stage");
+			
+		} else
+		#end
+		stage = new Stage (this, Reflect.hasField (attributes.context, "background") ? attributes.context.background : 0xFFFFFF);
 		
-		if (Reflect.hasField (config, "parameters")) {
+		if (Reflect.hasField (attributes, "parameters")) {
 			
 			try {
 				
-				stage.loaderInfo.parameters = config.parameters;
+				stage.loaderInfo.parameters = attributes.parameters;
 				
 			} catch (e:Dynamic) {}
 			
 		}
 		
-		if (Reflect.hasField (config, "resizable") && !config.resizable) {
+		if (Reflect.hasField (attributes, "resizable") && !attributes.resizable) {
 			
-			stage.__setLogicalSize (config.width, config.height);
+			stage.__setLogicalSize (attributes.width, attributes.height);
 			
 		}
 		
@@ -56,6 +58,7 @@ class Window extends LimeWindow {
 		stage = Lib.current.stage;
 		
 		#end
+		
 		
 	}
 	

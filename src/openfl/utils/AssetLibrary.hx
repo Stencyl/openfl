@@ -5,7 +5,7 @@ import lime.app.Future;
 import lime.graphics.Image;
 import lime.media.AudioBuffer;
 import lime.text.Font;
-import lime.utils.AssetLibrary in LimeAssetLibrary;
+import lime.utils.AssetLibrary as LimeAssetLibrary;
 import lime.utils.AssetManifest;
 import lime.utils.Bytes;
 import openfl.display.MovieClip;
@@ -19,7 +19,7 @@ import openfl.display.MovieClip;
 @:dox(hide) class AssetLibrary extends LimeAssetLibrary {
 	
 	
-	private var __proxy:LimeAssetLibrary;
+	@:noCompletion private var __proxy:LimeAssetLibrary;
 	
 	
 	public function new () {

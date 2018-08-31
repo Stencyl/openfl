@@ -1,7 +1,7 @@
 package openfl._internal.renderer.cairo;
 
 
-import lime.math.color.ARGB;
+import lime.math.ARGB;
 import openfl.display.CairoRenderer;
 import openfl.display.DisplayObject;
 

@@ -1,8 +1,7 @@
 package openfl._internal.renderer.opengl;
 
 
-import lime.graphics.opengl.WebGLContext;
-import lime.math.color.ARGB;
+import lime.math.ARGB;
 import lime.utils.Float32Array;
 import openfl._internal.renderer.cairo.CairoGraphics;
 import openfl._internal.renderer.canvas.CanvasGraphics;
@@ -24,6 +23,7 @@ import openfl._internal.renderer.opengl.stats.DrawCallContext;
 @:noDebug
 #end
 
+@:access(openfl.display3D.Context3D)
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.Graphics)
 @:access(openfl.display.Shader)
@@ -36,6 +36,7 @@ class GLGraphics {
 	
 	
 	private static var blankBitmapData = new BitmapData (1, 1, false, 0);
+	private static var maskRender:Bool;
 	private static var tempColorTransform = new ColorTransform (0, 0, 0, 1, 0, 0, 0, 0);
 	
 	
@@ -46,7 +47,7 @@ class GLGraphics {
 		
 		var data = new DrawCommandReader (graphics.__commands);
 		
-		var gl:WebGLContext = renderer.__gl;
+		var gl = renderer.__context.webgl;
 		
 		var tileRect = Rectangle.__pool.get ();
 		var tileTransform = Matrix.__pool.get ();
@@ -471,13 +472,14 @@ class GLGraphics {
 				
 				var data = new DrawCommandReader (graphics.__commands);
 				
-				var gl:WebGLContext = renderer.__gl;
+				var context = renderer.__context3D;
+				var gl = context.gl;
 				
 				var matrix = Matrix.__pool.get ();
 				
 				var shaderBuffer = null;
 				var bitmap = null;
-				var repeat = true;
+				var repeat = false;
 				var smooth = false;
 				var fill:Null<Int> = null;
 				
@@ -547,20 +549,20 @@ class GLGraphics {
 								var uMatrix = renderer.__getMatrix (graphics.__owner.__renderTransform);
 								var shader;
 								
-								if (shaderBuffer != null) {
+								if (shaderBuffer != null && !maskRender) {
 									
 									shader = renderer.__initShaderBuffer (shaderBuffer);
 									
 									renderer.__setShaderBuffer (shaderBuffer);
 									renderer.applyMatrix (uMatrix);
-									renderer.applyBitmapData (bitmap, false, false);
+									renderer.applyBitmapData (bitmap, false, repeat);
 									renderer.applyAlpha (graphics.__owner.__worldAlpha);
 									renderer.applyColorTransform (graphics.__owner.__worldColorTransform);
 									renderer.__updateShaderBuffer ();
 									
 								} else {
 									
-									shader = renderer.__initGraphicsShader (null);
+									shader = maskRender ? renderer.__maskShader : renderer.__initGraphicsShader (null);
 									renderer.setShader (shader);
 									renderer.applyMatrix (uMatrix);
 									renderer.applyBitmapData (bitmap, renderer.__allowSmoothing && smooth, repeat);
@@ -570,14 +572,14 @@ class GLGraphics {
 									
 								}
 								
-								if (graphics.__buffer == null || graphics.__bufferContext != gl) {
+								if (graphics.__buffer == null || graphics.__bufferContext != renderer.__context) {
 									
-									graphics.__bufferContext = cast gl;
+									graphics.__bufferContext = renderer.__context;
 									graphics.__buffer = gl.createBuffer ();
 									
 								}
 								
-								gl.bindBuffer (gl.ARRAY_BUFFER, graphics.__buffer);
+								context.__bindGLArrayBuffer (graphics.__buffer);
 								
 								if (updatedBuffer) {
 									
@@ -587,6 +589,12 @@ class GLGraphics {
 								
 								if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, 2, gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, bufferPosition * Float32Array.BYTES_PER_ELEMENT);
 								if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, (bufferPosition + 2) * Float32Array.BYTES_PER_ELEMENT);
+								
+								// TODO: Use context.drawTriangles
+								context.__flushGL ();
+								if (context.__state.renderToTexture == null) {
+									if (context.__stage.context3D == context && !context.__stage.__renderer.__cleared) context.__stage.__renderer.__clear ();
+								}
 								
 								gl.drawArrays (gl.TRIANGLES, 0, length * 6);
 								bufferPosition += (4 * length * 6);
@@ -621,18 +629,19 @@ class GLGraphics {
 								matrix.ty = y;
 								matrix.concat (graphics.__owner.__renderTransform);
 								
-								var shader = renderer.__initGraphicsShader (null);
+								var shader = maskRender ? renderer.__maskShader : renderer.__initGraphicsShader (null);
 								renderer.setShader (shader);
 								renderer.applyMatrix (renderer.__getMatrix (matrix));
-								renderer.applyBitmapData (blankBitmapData, renderer.__allowSmoothing, true);
+								renderer.applyBitmapData (blankBitmapData, renderer.__allowSmoothing, repeat);
 								renderer.applyAlpha ((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 								renderer.applyColorTransform (tempColorTransform);
 								renderer.updateShader ();
 								
-								gl.bindBuffer (gl.ARRAY_BUFFER, blankBitmapData.getBuffer (cast gl));
-								if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, 3, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 0);
-								if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 14 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
-								gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
+								var vertexBuffer = blankBitmapData.getVertexBuffer (context);
+								if (shader.__position != null) context.setVertexBufferAt (shader.__position.index, vertexBuffer, 0, FLOAT_3);
+								if (shader.__textureCoord != null) context.setVertexBufferAt (shader.__textureCoord.index, vertexBuffer, 3, FLOAT_2);
+								var indexBuffer = blankBitmapData.getIndexBuffer (context);
+								context.drawTriangles (indexBuffer);
 								
 								#if gl_stats
 									GLStats.incrementDrawCall (DrawCallContext.STAGE);
@@ -664,20 +673,20 @@ class GLGraphics {
 							var uMatrix = renderer.__getMatrix (graphics.__owner.__renderTransform);
 							var shader;
 							
-							if (shaderBuffer != null) {
+							if (shaderBuffer != null && !maskRender) {
 								
 								shader = renderer.__initShaderBuffer (shaderBuffer);
 								
 								renderer.__setShaderBuffer (shaderBuffer);
 								renderer.applyMatrix (uMatrix);
-								renderer.applyBitmapData (bitmap, false, false);
+								renderer.applyBitmapData (bitmap, false, repeat);
 								renderer.applyAlpha (1);
 								renderer.applyColorTransform (null);
 								renderer.__updateShaderBuffer ();
 								
 							} else {
 								
-								shader = renderer.__initGraphicsShader (null);
+								shader = maskRender ? renderer.__maskShader : renderer.__initGraphicsShader (null);
 								renderer.setShader (shader);
 								renderer.applyMatrix (uMatrix);
 								renderer.applyBitmapData (bitmap, renderer.__allowSmoothing && smooth, repeat);
@@ -687,14 +696,14 @@ class GLGraphics {
 								
 							}
 							
-							if (graphics.__buffer == null || graphics.__bufferContext != gl) {
+							if (graphics.__buffer == null || graphics.__bufferContext != renderer.__context) {
 								
-								graphics.__bufferContext = cast gl;
+								graphics.__bufferContext = renderer.__context;
 								graphics.__buffer = gl.createBuffer ();
 								
 							}
 							
-							gl.bindBuffer (gl.ARRAY_BUFFER, graphics.__buffer);
+							context.__bindGLArrayBuffer (graphics.__buffer);
 							
 							if (updatedBuffer) {
 								
@@ -709,16 +718,20 @@ class GLGraphics {
 								
 								case POSITIVE:
 									
-									gl.enable (gl.CULL_FACE);
-									gl.cullFace (gl.FRONT);
+									context.setCulling (FRONT);
 								
 								case NEGATIVE:
 									
-									gl.enable (gl.CULL_FACE);
-									gl.cullFace (gl.BACK);
+									context.setCulling (BACK);
 								
 								default:
 								
+							}
+							
+							// TODO: Use context.drawTriangles
+							context.__flushGL ();
+							if (context.__state.renderToTexture == null) {
+								if (context.__stage.context3D == context && !context.__stage.__renderer.__cleared) context.__stage.__renderer.__clear ();
 							}
 							
 							gl.drawArrays (gl.TRIANGLES, 0, length);
@@ -726,8 +739,7 @@ class GLGraphics {
 							
 							if (culling != NONE) {
 								
-								gl.disable (gl.CULL_FACE);
-								gl.cullFace (gl.BACK);
+								context.setCulling (BACK);
 								
 							}
 							
@@ -773,13 +785,9 @@ class GLGraphics {
 		
 		// TODO: Support invisible shapes
 		
+		maskRender = true;
 		render (graphics, renderer);
-		
-		// #if (js && html5)
-		// CanvasGraphics.render (graphics, cast renderer.__softwareRenderer);
-		// #elseif lime_cairo
-		// CairoGraphics.render (graphics, cast renderer.__softwareRenderer);
-		// #end
+		maskRender = false;
 		
 	}
 	

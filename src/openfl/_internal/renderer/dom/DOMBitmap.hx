@@ -1,8 +1,8 @@
 package openfl._internal.renderer.dom;
 
 
+import lime._internal.graphics.ImageCanvasUtil; // TODO
 import lime.graphics.ImageBuffer;
-import lime.graphics.utils.ImageCanvasUtil;
 import openfl.display.Bitmap;
 import openfl.display.DOMRenderer;
 

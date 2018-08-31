@@ -1,10 +1,12 @@
-package openfl.display;
+package openfl.display; #if !flash
 
 
-import lime.graphics.GLRenderContext;
 import openfl.display3D.Context3DMipFilter;
 import openfl.display3D.Context3DTextureFilter;
 import openfl.display3D.Context3DWrapMode;
+import openfl.display3D.Context3D;
+
+@:access(openfl.display3D.Context3D)
 
 #if !openfl_debug
 @:fileXml('tags="haxe,release"')
@@ -27,7 +29,7 @@ import openfl.display3D.Context3DWrapMode;
 	public var width:Int;
 	public var wrap:Context3DWrapMode;
 	
-	private var __isUniform:Bool;
+	@:noCompletion private var __isUniform:Bool;
 	
 	
 	public function new () {
@@ -43,8 +45,17 @@ import openfl.display3D.Context3DWrapMode;
 	}
 	
 	
-	private function __updateGL (gl:GLRenderContext, id:Int, overrideInput:T = null, overrideFilter:Context3DTextureFilter = null, overrideMipFilter:Context3DMipFilter = null, overrideWrap:Context3DWrapMode = null):Void {
+	@:noCompletion private function __disableGL (context:Context3D, id:Int):Void {
 		
+		var gl = context.gl;
+		context.setTextureAt (id, null);
+		
+	}
+	
+	
+	@:noCompletion private function __updateGL (context:Context3D, id:Int, overrideInput:T = null, overrideFilter:Context3DTextureFilter = null, overrideMipFilter:Context3DMipFilter = null, overrideWrap:Context3DWrapMode = null):Void {
+		
+		var gl = context.gl;
 		var input = overrideInput != null ? overrideInput : this.input;
 		var filter = overrideFilter != null ? overrideFilter : this.filter;
 		var mipFilter = overrideMipFilter != null ? overrideMipFilter : this.mipFilter;
@@ -55,43 +66,12 @@ import openfl.display3D.Context3DWrapMode;
 			// TODO: Improve for other input types? Use an interface perhaps
 			
 			var bitmapData:BitmapData = cast input;
-			
-			gl.activeTexture (gl.TEXTURE0 + id);
-			gl.bindTexture (gl.TEXTURE_2D, bitmapData.getTexture (gl));
-			
-			// TODO: Support anisotropic filter modes
-			var smooth = (filter == Context3DTextureFilter.LINEAR);
-			
-			switch (mipFilter) {
-				
-				case Context3DMipFilter.MIPLINEAR:
-					
-					gl.generateMipmap (gl.TEXTURE_2D);
-					gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, smooth ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST_MIPMAP_LINEAR);
-				
-				case Context3DMipFilter.MIPNEAREST:
-					
-					gl.generateMipmap (gl.TEXTURE_2D);
-					gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, smooth ? gl.LINEAR_MIPMAP_NEAREST : gl.NEAREST_MIPMAP_NEAREST);
-				
-				default:
-					
-					gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, smooth ? gl.LINEAR : gl.NEAREST);
-				
-			}
-			
-			gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, smooth ? gl.LINEAR : gl.NEAREST);
-			
-			var repeatS = (wrap == Context3DWrapMode.REPEAT || wrap == Context3DWrapMode.REPEAT_U_CLAMP_V);
-			var repeatT = (wrap == Context3DWrapMode.REPEAT || wrap == Context3DWrapMode.CLAMP_U_REPEAT_V);
-			
-			gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, repeatS ? gl.REPEAT : gl.CLAMP_TO_EDGE);
-			gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, repeatT ? gl.REPEAT : gl.CLAMP_TO_EDGE);
+			context.setTextureAt (id, bitmapData.getTexture (context));
+			context.setSamplerStateAt (id, wrap, filter, mipFilter);
 			
 		} else {
 			
-			gl.activeTexture (gl.TEXTURE0 + id);
-			gl.bindTexture (gl.TEXTURE_2D, null);
+			context.setTextureAt (id, null);
 			
 		}
 		
@@ -99,3 +79,8 @@ import openfl.display3D.Context3DWrapMode;
 	
 	
 }
+
+
+#else
+typedef ShaderInput<T> = flash.display.ShaderInput<T>;
+#end

@@ -1,8 +1,8 @@
 package openfl.display;
 
 
-import lime.app.Application in LimeApplication;
-import lime.app.Config;
+import lime.app.Application as LimeApplication;
+import lime.ui.WindowAttributes;
 import openfl._internal.Lib;
 import openfl.display.MovieClip;
 
@@ -13,6 +13,7 @@ import openfl.display.MovieClip;
 
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.LoaderInfo)
+@:access(openfl.display.Window)
 
 
 class Application extends LimeApplication {
@@ -28,51 +29,61 @@ class Application extends LimeApplication {
 			
 		}
 		
-	}
-	
-	
-	public override function create (config:Config):Void {
-		
-		this.config = config;
-		
-		backend.create (config);
-		
 		#if (!flash && !macro)
 		if (Lib.current == null) Lib.current = new MovieClip ();
 		Lib.current.__loaderInfo = LoaderInfo.create (null);
 		Lib.current.__loaderInfo.content = Lib.current;
 		#end
 		
-		if (config != null) {
+	}
+	
+	
+	public override function createWindow (attributes:WindowAttributes):Window {
+		
+		var window = new Window (this, attributes);
+		
+		__windows.push (window);
+		__windowByID.set (window.id, window);
+		
+		window.onClose.add (__onWindowClose.bind (window), false, -10000);
+		
+		if (__window == null) {
 			
-			if (Reflect.hasField (config, "fps")) {
-				
-				frameRate = config.fps;
-				
-			}
+			__window = window;
 			
-			if (Reflect.hasField (config, "windows")) {
-				
-				for (windowConfig in config.windows) {
-					
-					var window = new Window (windowConfig);
-					createWindow (window);
-					
-					#if (flash || html5)
-					break;
-					#end
-					
-				}
-				
-			}
+			window.onActivate.add (onWindowActivate);
+			window.onRenderContextLost.add (onRenderContextLost);
+			window.onRenderContextRestored.add (onRenderContextRestored);
+			window.onDeactivate.add (onWindowDeactivate);
+			window.onDropFile.add (onWindowDropFile);
+			window.onEnter.add (onWindowEnter);
+			window.onExpose.add (onWindowExpose);
+			window.onFocusIn.add (onWindowFocusIn);
+			window.onFocusOut.add (onWindowFocusOut);
+			window.onFullscreen.add (onWindowFullscreen);
+			window.onKeyDown.add (onKeyDown);
+			window.onKeyUp.add (onKeyUp);
+			window.onLeave.add (onWindowLeave);
+			window.onMinimize.add (onWindowMinimize);
+			window.onMouseDown.add (onMouseDown);
+			window.onMouseMove.add (onMouseMove);
+			window.onMouseMoveRelative.add (onMouseMoveRelative);
+			window.onMouseUp.add (onMouseUp);
+			window.onMouseWheel.add (onMouseWheel);
+			window.onMove.add (onWindowMove);
+			window.onRender.add (render);
+			window.onResize.add (onWindowResize);
+			window.onRestore.add (onWindowRestore);
+			window.onTextEdit.add (onTextEdit);
+			window.onTextInput.add (onTextInput);
 			
-			if (preloader == null || preloader.complete) {
-				
-				onPreloadComplete ();
-				
-			}
+			onWindowCreate ();
 			
 		}
+		
+		onCreateWindow.dispatch (window);
+		
+		return window;
 		
 	}
 	

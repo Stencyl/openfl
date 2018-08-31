@@ -1,7 +1,7 @@
 package openfl._internal.renderer.dom;
 
 
-import lime.math.color.ARGB;
+import lime.math.ARGB;
 import openfl.display.DisplayObject;
 import openfl.display.DOMRenderer;
 

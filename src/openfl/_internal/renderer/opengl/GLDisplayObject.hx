@@ -1,7 +1,8 @@
 package openfl._internal.renderer.opengl;
 
 
-import lime.math.color.ARGB;
+import lime.math.ARGB;
+import openfl.display3D.Context3DClearMask;
 import openfl.display.DisplayObject;
 import openfl.display.OpenGLRenderer;
 import openfl.geom.Rectangle;
@@ -11,6 +12,7 @@ import openfl.geom.Rectangle;
 @:noDebug
 #end
 
+@:access(openfl.display3D.Context3D)
 @:access(openfl.display.DisplayObject)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -29,15 +31,14 @@ class GLDisplayObject {
 			renderer.__setBlendMode (displayObject.__worldBlendMode);
 			renderer.__pushMaskObject (displayObject);
 			
-			var gl = renderer.__gl;
+			var context = renderer.__context3D;
 			
 			var rect = Rectangle.__pool.get ();
 			rect.setTo (0, 0, displayObject.width, displayObject.height);
 			renderer.__pushMaskRect (rect, displayObject.__renderTransform);
 			
 			var color:ARGB = (displayObject.opaqueBackground:ARGB);
-			gl.clearColor (color.r / 0xFF, color.g / 0xFF, color.b / 0xFF, 1);
-			gl.clear (gl.COLOR_BUFFER_BIT);
+			context.clear (color.r / 0xFF, color.g / 0xFF, color.b / 0xFF, 1, 0, 0, Context3DClearMask.COLOR);
 			
 			renderer.__popMaskRect ();
 			renderer.__popMaskObject (displayObject);
@@ -61,7 +62,7 @@ class GLDisplayObject {
 		
 		if (displayObject.opaqueBackground != null && !displayObject.__isCacheBitmapRender && displayObject.width > 0 && displayObject.height > 0) {
 			
-			var gl = renderer.__gl;
+			// var gl = renderer.__context.webgl;
 			
 			// TODO
 			
