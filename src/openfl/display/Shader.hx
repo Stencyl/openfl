@@ -29,8 +29,6 @@ import openfl.utils.ByteArray;
 class Shader {
 	
 	
-	@:noCompletion private static var __programs = new Map<String, Program3D> ();
-	
 	public var byteCode (null, default):ByteArray;
 	public var data (get, set):ShaderData;
 	public var glFragmentSource (get, set):String;
@@ -188,42 +186,42 @@ class Shader {
 	}
 	
 	
-	// @:noCompletion private function __createGLProgram (vertexSource:String, fragmentSource:String):GLProgram {
+	@:noCompletion private function __createGLProgram (vertexSource:String, fragmentSource:String):GLProgram {
 		
-	// 	var gl = __context.gl;
+		var gl = __context.gl;
 		
-	// 	var vertexShader = __createGLShader (vertexSource, gl.VERTEX_SHADER);
-	// 	var fragmentShader = __createGLShader (fragmentSource, gl.FRAGMENT_SHADER);
+		var vertexShader = __createGLShader (vertexSource, gl.VERTEX_SHADER);
+		var fragmentShader = __createGLShader (fragmentSource, gl.FRAGMENT_SHADER);
 		
-	// 	var program = gl.createProgram ();
+		var program = gl.createProgram ();
 		
-	// 	// Fix support for drivers that don't draw if attribute 0 is disabled
-	// 	for (param in __paramFloat) {
+		// Fix support for drivers that don't draw if attribute 0 is disabled
+		for (param in __paramFloat) {
 			
-	// 		if (param.name.indexOf ("Position") > -1 && StringTools.startsWith (param.name, "openfl_")) {
+			if (param.name.indexOf ("Position") > -1 && StringTools.startsWith (param.name, "openfl_")) {
 				
-	// 			gl.bindAttribLocation (program, 0, param.name);
-	// 			break;
+				gl.bindAttribLocation (program, 0, param.name);
+				break;
 				
-	// 		}
+			}
 			
-	// 	}
+		}
 		
-	// 	gl.attachShader (program, vertexShader);
-	// 	gl.attachShader (program, fragmentShader);
-	// 	gl.linkProgram (program);
+		gl.attachShader (program, vertexShader);
+		gl.attachShader (program, fragmentShader);
+		gl.linkProgram (program);
 		
-	// 	if (gl.getProgramParameter (program, gl.LINK_STATUS) == 0) {
+		if (gl.getProgramParameter (program, gl.LINK_STATUS) == 0) {
 			
-	// 		var message = "Unable to initialize the shader program";
-	// 		message += "\n" + gl.getProgramInfoLog (program);
-	// 		Log.error (message);
+			var message = "Unable to initialize the shader program";
+			message += "\n" + gl.getProgramInfoLog (program);
+			Log.error (message);
 			
-	// 	}
+		}
 		
-	// 	return program;
+		return program;
 		
-	// }
+	}
 	
 	
 	@:noCompletion private function __disable ():Void {
@@ -242,6 +240,7 @@ class Shader {
 		var gl = __context.gl;
 		
 		var textureCount = 0;
+		
 		for (input in __inputBitmapData) {
 			
 			input.__disableGL (__context, textureCount);
@@ -355,12 +354,15 @@ class Shader {
 			var prefix = 
 				
 				"#ifdef GL_ES
-					#ifdef GL_FRAGMENT_PRECISION_HIGH
-					precision highp float;
-					#else
-					precision " + (precisionHint == FULL ? "mediump" : "lowp") + " float;
-					#endif // GL_FRAGMENT_PRECISION_HIGH
-				#endif // GL_ES
+				" + (precisionHint == FULL ?
+				"#ifdef GL_FRAGMENT_PRECISION_HIGH
+				precision highp float;
+				#else
+				precision mediump float;
+				#endif" : 
+				"precision lowp float;") +
+				"
+				#endif
 				";
 			
 			var vertex = prefix + glVertexSource;
@@ -368,21 +370,25 @@ class Shader {
 			
 			var id = vertex + fragment;
 			
-			if (__programs.exists (id)) {
+			if (__context.__programs.exists (id)) {
 				
-				program = __programs.get (id);
+				program = __context.__programs.get (id);
 				
 			} else {
 				
 				program = __context.createProgram (GLSL);
-				program.uploadSources (vertex, fragment);
-				__programs.set (id, program);
+				
+				// TODO
+				// program.uploadSources (vertex, fragment);
+				program.__glProgram = __createGLProgram (vertex, fragment);
+				
+				__context.__programs.set (id, program);
 				
 			}
 			
 			if (program != null) {
 				
-				glProgram = program.__programID;
+				glProgram = program.__glProgram;
 				
 				for (input in __inputBitmapData) {
 					
@@ -631,11 +637,11 @@ class Shader {
 	}
 	
 	
-	@:noCompletion private function __updateFromBuffer (shaderBuffer:ShaderBuffer):Void {
+	@:noCompletion private function __updateFromBuffer (shaderBuffer:ShaderBuffer, bufferOffset:Int):Void {
 		
 		if (program != null) {
 			
-			__updateGLFromBuffer (shaderBuffer);
+			__updateGLFromBuffer (shaderBuffer, bufferOffset);
 			
 		}
 		
@@ -674,7 +680,7 @@ class Shader {
 	}
 	
 	
-	@:noCompletion private function __updateGLFromBuffer (shaderBuffer:ShaderBuffer):Void {
+	@:noCompletion private function __updateGLFromBuffer (shaderBuffer:ShaderBuffer, bufferOffset:Int):Void {
 		
 		var textureCount = 0;
 		var input, inputData, inputFilter, inputMipFilter, inputWrap;
@@ -756,7 +762,7 @@ class Shader {
 					
 				} else {
 					
-					boolRef.__updateGLFromBuffer (__context, paramData, shaderBuffer.paramPositions[i], shaderBuffer.paramLengths[i]);
+					boolRef.__updateGLFromBuffer (__context, paramData, shaderBuffer.paramPositions[i], shaderBuffer.paramLengths[i], bufferOffset);
 					
 				}
 				
@@ -784,7 +790,7 @@ class Shader {
 					
 				} else {
 					
-					floatRef.__updateGLFromBuffer (__context, paramData, shaderBuffer.paramPositions[i], shaderBuffer.paramLengths[i]);
+					floatRef.__updateGLFromBuffer (__context, paramData, shaderBuffer.paramPositions[i], shaderBuffer.paramLengths[i], bufferOffset);
 					
 				}
 				
@@ -812,7 +818,7 @@ class Shader {
 					
 				} else {
 					
-					intRef.__updateGLFromBuffer (__context, paramData, shaderBuffer.paramPositions[i], shaderBuffer.paramLengths[i]);
+					intRef.__updateGLFromBuffer (__context, paramData, shaderBuffer.paramPositions[i], shaderBuffer.paramLengths[i], bufferOffset);
 					
 				}
 				

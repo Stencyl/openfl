@@ -48,10 +48,7 @@ class CanvasRenderer extends DisplayObjectRenderer {
 	
 	public function applySmoothing (context:Canvas2DRenderContext, value:Bool) {
 		
-		untyped (context).mozImageSmoothingEnabled = value;
-		//untyped (context).webkitImageSmoothingEnabled = value;
-		untyped (context).msImageSmoothingEnabled = value;
-		untyped (context).imageSmoothingEnabled = value;
+		context.imageSmoothingEnabled = value;
 		
 	}
 	
@@ -197,6 +194,7 @@ class CanvasRenderer extends DisplayObjectRenderer {
 	
 	@:noCompletion private override function __setBlendMode (value:BlendMode):Void {
 		
+		if (__overrideBlendMode != null) value = __overrideBlendMode;
 		if (__blendMode == value) return;
 		
 		__blendMode = value;

@@ -26,8 +26,8 @@ import lime.math.ColorMatrix;
 import lime.math.Rectangle as LimeRectangle;
 import lime.math.Vector2;
 import lime.utils.Float32Array;
-import lime.utils.Int16Array;
 import lime.utils.UInt8Array;
+import lime.utils.UInt16Array;
 import openfl._internal.utils.PerlinNoise;
 import openfl.display3D.textures.TextureBase;
 import openfl.display3D.textures.RectangleTexture;
@@ -62,8 +62,8 @@ import openfl.display.CairoRenderer;
 #end
 
 #if gl_stats
-import openfl._internal.renderer.opengl.stats.GLStats;
-import openfl._internal.renderer.opengl.stats.DrawCallContext;
+import openfl._internal.renderer.context3D.stats.Context3DStats;
+import openfl._internal.renderer.context3D.stats.DrawCallContext;
 #end
 
 
@@ -216,7 +216,7 @@ class BitmapData implements IBitmapDrawable {
 	@:noCompletion private var __framebufferContext:RenderContext;
 	@:noCompletion private var __indexBuffer:IndexBuffer3D;
 	@:noCompletion private var __indexBufferContext:RenderContext;
-	@:noCompletion private var __indexBufferData:Int16Array;
+	@:noCompletion private var __indexBufferData:UInt16Array;
 	@:noCompletion private var __isMask:Bool;
 	@:noCompletion private var __isValid:Bool;
 	@:noCompletion private var __mask:DisplayObject;
@@ -932,7 +932,7 @@ class BitmapData implements IBitmapDrawable {
 			
 			var renderer = new OpenGLRenderer (Lib.current.stage.context3D, this);
 			renderer.__allowSmoothing = smoothing;
-			renderer.__setBlendMode (blendMode);
+			renderer.__overrideBlendMode = blendMode;
 			
 			renderer.__worldTransform = transform;
 			renderer.__worldAlpha = 1 / source.__worldAlpha;
@@ -997,7 +997,7 @@ class BitmapData implements IBitmapDrawable {
 			#end
 			
 			renderer.__allowSmoothing = smoothing;
-			renderer.__setBlendMode (blendMode);
+			renderer.__overrideBlendMode = blendMode;
 			
 			renderer.__worldTransform = transform;
 			renderer.__worldAlpha = 1 / source.__worldAlpha;
@@ -1237,7 +1237,9 @@ class BitmapData implements IBitmapDrawable {
 		
 		if (__indexBuffer == null || __indexBufferContext != context.__context) {
 			
-			__indexBufferData = new Int16Array (6);
+			// TODO: Use shared buffer on context
+			
+			__indexBufferData = new UInt16Array (6);
 			__indexBufferData[0] = 0;
 			__indexBufferData[1] = 1;
 			__indexBufferData[2] = 2;
@@ -2499,6 +2501,9 @@ class BitmapData implements IBitmapDrawable {
 			height = image.height;
 			rect = new Rectangle (0, 0, image.width, image.height);
 			
+			__textureWidth = width;
+			__textureHeight = height;
+			
 			#if sys
 			image.format = BGRA32;
 			image.premultiplied = true;
@@ -2714,7 +2719,7 @@ class BitmapData implements IBitmapDrawable {
 		context.drawTriangles (indexBuffer);
 		
 		#if gl_stats
-			GLStats.incrementDrawCall (DrawCallContext.STAGE);
+			Context3DStats.incrementDrawCall (DrawCallContext.STAGE);
 		#end
 		
 		renderer.__clearShader ();
@@ -2740,7 +2745,7 @@ class BitmapData implements IBitmapDrawable {
 		context.drawTriangles (indexBuffer);
 		
 		#if gl_stats
-			GLStats.incrementDrawCall (DrawCallContext.STAGE);
+			Context3DStats.incrementDrawCall (DrawCallContext.STAGE);
 		#end
 		
 		renderer.__clearShader ();

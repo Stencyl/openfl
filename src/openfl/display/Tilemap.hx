@@ -8,20 +8,19 @@ import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
 
 #if !flash
-import lime.graphics.opengl.GLBuffer;
-import lime.utils.Float32Array;
 import openfl._internal.renderer.cairo.CairoBitmap;
 import openfl._internal.renderer.cairo.CairoDisplayObject;
 import openfl._internal.renderer.cairo.CairoTilemap;
 import openfl._internal.renderer.canvas.CanvasBitmap;
 import openfl._internal.renderer.canvas.CanvasDisplayObject;
 import openfl._internal.renderer.canvas.CanvasTilemap;
+import openfl._internal.renderer.context3D.Context3DBuffer;
 import openfl._internal.renderer.dom.DOMBitmap;
 import openfl._internal.renderer.dom.DOMDisplayObject;
 import openfl._internal.renderer.dom.DOMTilemap;
-import openfl._internal.renderer.opengl.GLBitmap;
-import openfl._internal.renderer.opengl.GLDisplayObject;
-import openfl._internal.renderer.opengl.GLTilemap;
+import openfl._internal.renderer.context3D.Context3DBitmap;
+import openfl._internal.renderer.context3D.Context3DDisplayObject;
+import openfl._internal.renderer.context3D.Context3DTilemap;
 #end
 
 #if !openfl_debug
@@ -51,11 +50,8 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	@:noCompletion private var __tileset:Tileset;
 	
 	#if !flash
-	@:noCompletion private var __buffer:GLBuffer;
-	@:noCompletion private var __bufferContext:RenderContext;
-	@:noCompletion private var __bufferData:Float32Array;
+	@:noCompletion private var __buffer:Context3DBuffer;
 	@:noCompletion private var __bufferDirty:Bool;
-	@:noCompletion private var __bufferLength:Int;
 	@:noCompletion private var __height:Int;
 	@:noCompletion private var __width:Int;
 	#end
@@ -343,12 +339,12 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 		
 		if (__cacheBitmap != null && !__isCacheBitmapRender) {
 			
-			GLBitmap.render (__cacheBitmap, renderer);
+			Context3DBitmap.render (__cacheBitmap, renderer);
 			
 		} else {
 			
-			GLDisplayObject.render (this, renderer);
-			GLTilemap.render (this, renderer);
+			Context3DDisplayObject.render (this, renderer);
+			Context3DTilemap.render (this, renderer);
 			
 		}
 		
@@ -363,12 +359,12 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 		
 		// if (__cacheBitmap != null && !__isCacheBitmapRender) {
 			
-		// 	GLBitmap.renderMask (__cacheBitmap, renderer);
+		// 	Context3DBitmap.renderMask (__cacheBitmap, renderer);
 			
 		// } else {
 			
-			GLDisplayObject.renderMask (this, renderer);
-			GLTilemap.renderMask (this, renderer);
+			Context3DDisplayObject.renderMask (this, renderer);
+			Context3DTilemap.renderMask (this, renderer);
 			
 		// }
 		

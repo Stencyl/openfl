@@ -13,7 +13,8 @@ import lime.math.Rectangle as LimeRectangle;
 import lime.math.Vector2;
 import lime.utils.Float32Array;
 import lime.utils.UInt8Array;
-import openfl._internal.renderer.Context3DState;
+import lime.utils.UInt16Array;
+import openfl._internal.renderer.context3D.Context3DState;
 import openfl._internal.renderer.SamplerState;
 import openfl.display3D.textures.CubeTexture;
 import openfl.display3D.textures.RectangleTexture;
@@ -37,7 +38,7 @@ import openfl.utils.ByteArray;
 @:noDebug
 #end
 
-@:access(openfl._internal.renderer.Context3DState)
+@:access(openfl._internal.renderer.context3D.Context3DState)
 @:access(openfl.display3D.textures.CubeTexture)
 @:access(openfl.display3D.textures.RectangleTexture)
 @:access(openfl.display3D.textures.TextureBase)
@@ -90,6 +91,10 @@ import openfl.utils.ByteArray;
 	@:noCompletion private var __frontBufferTexture:RectangleTexture;
 	@:noCompletion private var __positionScale:Float32Array; // TODO: Better approach?
 	@:noCompletion private var __present:Bool;
+	@:noCompletion private var __programs:Map<String, Program3D>;
+	@:noCompletion private var __quadIndexBuffer:IndexBuffer3D;
+	@:noCompletion private var __quadIndexBufferCount:Int;
+	@:noCompletion private var __quadIndexBufferElements:Int;
 	@:noCompletion private var __stage:Stage;
 	@:noCompletion private var __stage3D:Stage3D;
 	@:noCompletion private var __state:Context3DState;
@@ -113,6 +118,7 @@ import openfl.utils.ByteArray;
 		__vertexConstants = new Float32Array (4 * 128);
 		__fragmentConstants = new Float32Array (4 * 128);
 		__positionScale = new Float32Array ([ 1.0, 1.0, 1.0, 1.0 ]);
+		__programs = new Map<String, Program3D> ();
 		
 		if (GL_MAX_VIEWPORT_DIMS == -1) {
 			
@@ -189,6 +195,31 @@ import openfl.utils.ByteArray;
 		
 		driverInfo = __driverInfo;
 		
+		__quadIndexBufferElements = Math.floor (0xFFFF / 4);
+		__quadIndexBufferCount = __quadIndexBufferElements * 6;
+		
+		var data = new UInt16Array (__quadIndexBufferCount);
+		
+		var index:UInt = 0;
+		var vertex:UInt = 0;
+		
+		for (i in 0...__quadIndexBufferElements) {
+			
+			data[index] = vertex;
+			data[index + 1] = vertex + 1;
+			data[index + 2] = vertex + 2;
+			data[index + 3] = vertex + 2;
+			data[index + 4] = vertex + 1;
+			data[index + 5] = vertex + 3;
+			
+			index += 6;
+			vertex += 4;
+			
+		}
+		
+		__quadIndexBuffer = createIndexBuffer (__quadIndexBufferCount);
+		__quadIndexBuffer.uploadFromTypedArray (data);
+		
 	}
 	
 	
@@ -196,7 +227,6 @@ import openfl.utils.ByteArray;
 		
 		__flushGLFramebuffer ();
 		__flushGLViewport ();
-		__flushGLStencil ();
 		
 		var clearMask = 0;
 		
@@ -233,6 +263,8 @@ import openfl.utils.ByteArray;
 			gl.clearStencil (stencil);
 			
 		}
+		
+		if (clearMask == 0) return;
 		
 		__setGLScissorTest (false);
 		gl.clear (clearMask);
@@ -410,8 +442,6 @@ import openfl.utils.ByteArray;
 	
 	public function drawTriangles (indexBuffer:IndexBuffer3D, firstIndex:Int = 0, numTriangles:Int = -1):Void {
 		
-		__flushGL ();
-		
 		#if !openfl_disable_display_render
 		if (__state.renderToTexture == null) {
 			
@@ -419,9 +449,12 @@ import openfl.utils.ByteArray;
 			if (__stage.context3D == this && !__stage.__renderer.__cleared) __stage.__renderer.__clear ();
 			
 		}
+		
+		__flushGL ();
+		
 		#end
 		
-		if (__state.program != null && __state.program.__format == AGAL) {
+		if (__state.program != null) {
 			__state.program.__flush ();
 		}
 		
@@ -760,8 +793,8 @@ import openfl.utils.ByteArray;
 			
 		}
 		
-		gl.enableVertexAttribArray (index);
 		__bindGLArrayBuffer (buffer.__id);
+		gl.enableVertexAttribArray (index);
 		
 		var byteOffset = bufferOffset * 4;
 		
@@ -856,6 +889,29 @@ import openfl.utils.ByteArray;
 			__contextState.__currentGLTextureCubeMap = texture;
 			
 		// }
+		
+	}
+	
+	
+	public function __drawTriangles (firstIndex:Int = 0, count:Int):Void {
+		
+		#if !openfl_disable_display_render
+		if (__state.renderToTexture == null) {
+			
+			// TODO: Make sure state is correct for this?
+			if (__stage.context3D == this && !__stage.__renderer.__cleared) __stage.__renderer.__clear ();
+			
+		}
+		
+		__flushGL ();
+		
+		#end
+		
+		if (__state.program != null) {
+			__state.program.__flush ();
+		}
+		
+		gl.drawArrays (gl.TRIANGLES, firstIndex, count);
 		
 	}
 	
@@ -1009,15 +1065,15 @@ import openfl.utils.ByteArray;
 				var framebuffer = __state.renderToTexture.__getGLFramebuffer (__state.renderToTextureDepthStencil, __state.renderToTextureAntiAlias, __state.renderToTextureSurfaceSelector);
 				__bindGLFramebuffer (framebuffer);
 				
-				__setGLDepthTest (__state.renderToTextureDepthStencil);
-				__setGLStencilTest (__state.renderToTextureDepthStencil);
-				
 				__contextState.renderToTexture = __state.renderToTexture;
 				__contextState.renderToTextureAntiAlias = __state.renderToTextureAntiAlias;
 				__contextState.renderToTextureDepthStencil = __state.renderToTextureDepthStencil;
 				__contextState.renderToTextureSurfaceSelector = __state.renderToTextureSurfaceSelector;
 				
 			}
+			
+			__setGLDepthTest (__state.renderToTextureDepthStencil);
+			__setGLStencilTest (__state.renderToTextureDepthStencil);
 			
 			__setGLFrontFace (true);
 			
@@ -1033,13 +1089,13 @@ import openfl.utils.ByteArray;
 				
 				__bindGLFramebuffer (__state.__primaryGLFramebuffer);
 				
-				__setGLDepthTest (__state.backBufferEnableDepthAndStencil);
-				__setGLStencilTest (__state.backBufferEnableDepthAndStencil);
-				
 				__contextState.renderToTexture = null;
 				__contextState.backBufferEnableDepthAndStencil = __state.backBufferEnableDepthAndStencil;
 				
 			}
+			
+			__setGLDepthTest (__state.backBufferEnableDepthAndStencil);
+			__setGLStencilTest (__state.backBufferEnableDepthAndStencil);
 			
 			__setGLFrontFace (__stage.context3D != this);
 			
@@ -1054,14 +1110,12 @@ import openfl.utils.ByteArray;
 		
 		if (#if openfl_disable_context_cache true #else __contextState.program != program #end) {
 			
-			if (program != null && program.__format == AGAL) {
-				
-				program.__use ();
-				
-			} else {
-				
-				gl.useProgram (program.__programID);
-				
+			if (__contextState.program != null) {
+				__contextState.program.__disable ();
+			}
+			
+			if (program != null) {
+				program.__enable ();
 			}
 			
 			__contextState.program = program;
@@ -1244,7 +1298,7 @@ import openfl.utils.ByteArray;
 				
 			}
 			
-			if (__state.program != null && samplerState.textureAlpha) {
+			if (__state.program != null && __state.program.__format == AGAL && samplerState.textureAlpha) {
 				
 				gl.activeTexture (gl.TEXTURE0 + sampler + 4);
 				
@@ -1257,7 +1311,7 @@ import openfl.utils.ByteArray;
 					}
 					
 					texture.__alphaTexture.__setSamplerState (samplerState);
-					gl.uniform1i (__state.program.__alphaSamplerEnabled[sampler].location, 1);
+					gl.uniform1i (__state.program.__agalAlphaSamplerEnabled[sampler].location, 1);
 					
 					#if desktop
 					// TODO: Cache?
@@ -1267,7 +1321,7 @@ import openfl.utils.ByteArray;
 				} else {
 					
 					__bindGLTexture2D (null);
-					gl.uniform1i (__state.program.__alphaSamplerEnabled[sampler].location, 0);
+					gl.uniform1i (__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
 					
 				}
 				

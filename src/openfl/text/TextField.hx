@@ -16,8 +16,8 @@ import openfl._internal.renderer.canvas.CanvasDisplayObject;
 import openfl._internal.renderer.canvas.CanvasTextField;
 import openfl._internal.renderer.dom.DOMBitmap;
 import openfl._internal.renderer.dom.DOMTextField;
-import openfl._internal.renderer.opengl.GLBitmap;
-import openfl._internal.renderer.opengl.GLDisplayObject;
+import openfl._internal.renderer.context3D.Context3DBitmap;
+import openfl._internal.renderer.context3D.Context3DDisplayObject;
 import openfl._internal.formats.swf.SWFLite;
 import openfl._internal.symbols.DynamicTextSymbol;
 import openfl._internal.symbols.FontSymbol;
@@ -2028,14 +2028,11 @@ class TextField extends InteractiveObject {
 				
 				if (__textEngine.antiAliasType == ADVANCED && __textEngine.gridFitType == PIXEL) {
 					
-					smoothingEnabled = untyped (renderer.context).imageSmoothingEnabled;
+					smoothingEnabled = renderer.context.imageSmoothingEnabled;
 					
 					if (smoothingEnabled) {
 						
-						untyped (renderer.context).mozImageSmoothingEnabled = false;
-						//untyped (renderer.context).webkitImageSmoothingEnabled = false;
-						untyped (renderer.context).msImageSmoothingEnabled = false;
-						untyped (renderer.context).imageSmoothingEnabled = false;
+						renderer.context.imageSmoothingEnabled = false;
 						
 					}
 					
@@ -2045,10 +2042,7 @@ class TextField extends InteractiveObject {
 				
 				if (smoothingEnabled) {
 					
-					untyped (renderer.context).mozImageSmoothingEnabled = true;
-					//untyped (renderer.context).webkitImageSmoothingEnabled = true;
-					untyped (renderer.context).msImageSmoothingEnabled = true;
-					untyped (renderer.context).imageSmoothingEnabled = true;
+					renderer.context.imageSmoothingEnabled = true;
 					
 				}
 				
@@ -2116,7 +2110,7 @@ class TextField extends InteractiveObject {
 		
 		if (__cacheBitmap != null && !__isCacheBitmapRender) {
 			
-			GLBitmap.render (__cacheBitmap, renderer);
+			Context3DBitmap.render (__cacheBitmap, renderer);
 			
 		} else {
 			
@@ -2125,7 +2119,7 @@ class TextField extends InteractiveObject {
 			#elseif lime_cairo
 			CairoTextField.render (this, cast renderer.__softwareRenderer, __worldTransform);
 			#end
-			GLDisplayObject.render (this, renderer);
+			Context3DDisplayObject.render (this, renderer);
 			
 		}
 		

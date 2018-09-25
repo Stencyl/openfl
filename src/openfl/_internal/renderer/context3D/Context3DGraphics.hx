@@ -1,8 +1,9 @@
-package openfl._internal.renderer.opengl;
+package openfl._internal.renderer.context3D;
 
 
 import lime.math.ARGB;
 import lime.utils.Float32Array;
+import lime.utils.UInt16Array;
 import openfl._internal.renderer.cairo.CairoGraphics;
 import openfl._internal.renderer.canvas.CanvasGraphics;
 import openfl.display.BitmapData;
@@ -14,8 +15,8 @@ import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
 
 #if gl_stats
-import openfl._internal.renderer.opengl.stats.GLStats;
-import openfl._internal.renderer.opengl.stats.DrawCallContext;
+import openfl._internal.renderer.context3D.stats.Context3DStats;
+import openfl._internal.renderer.context3D.stats.DrawCallContext;
 #end
 
 #if !openfl_debug
@@ -32,7 +33,7 @@ import openfl._internal.renderer.opengl.stats.DrawCallContext;
 @:access(openfl.geom.Rectangle)
 
 
-class GLGraphics {
+class Context3DGraphics {
 	
 	
 	private static var blankBitmapData = new BitmapData (1, 1, false, 0);
@@ -42,12 +43,14 @@ class GLGraphics {
 	
 	private static function buildBuffer (graphics:Graphics, renderer:OpenGLRenderer):Void {
 		
-		var bufferLength = 0;
-		var bufferPosition = 0;
+		var quadBufferPosition = 0;
+		var triangleIndexBufferPosition = 0;
+		var vertexBufferPosition = 0;
+		var vertexBufferPositionUVT = 0;
 		
 		var data = new DrawCommandReader (graphics.__commands);
 		
-		var gl = renderer.__context.webgl;
+		var context = renderer.__context3D;
 		
 		var tileRect = Rectangle.__pool.get ();
 		var tileTransform = Matrix.__pool.get ();
@@ -125,20 +128,26 @@ class GLGraphics {
 							
 						}
 						
-						var dataLength = 4;
-						var stride = dataLength * 6;
-						var bufferLength = length * stride;
+						var dataPerVertex = 4;
+						var stride = dataPerVertex * 4;
 						
-						resizeBuffer (graphics, bufferPosition + (length * stride));
+						if (graphics.__quadBuffer == null) {
+							
+							graphics.__quadBuffer = new Context3DBuffer (context, QUADS, length, dataPerVertex);
+							
+						} else {
+							
+							graphics.__quadBuffer.resize (quadBufferPosition + length, dataPerVertex);
+							
+						}
 						
-						var offset = bufferPosition;
-						var alpha = 1.0, tileData, id;
+						var vertexOffset, alpha = 1.0, tileData, id;
 						var bitmapWidth, bitmapHeight, tileWidth:Float, tileHeight:Float;
 						var uvX, uvY, uvWidth, uvHeight;
 						var x, y, x2, y2, x3, y3, x4, y4;
 						var ri, ti;
 						
-						var __bufferData = graphics.__bufferData;
+						var vertexBufferData = graphics.__quadBuffer.vertexBufferData;
 						
 						#if openfl_power_of_two
 						bitmapWidth = 1;
@@ -162,7 +171,7 @@ class GLGraphics {
 						
 						for (i in 0...length) {
 							
-							offset = bufferPosition + (i * stride);
+							vertexOffset = (quadBufferPosition + i) * stride;
 							
 							ri = (hasIndices ? (indices[i] * 4) : i * 4);
 							if (ri < 0) continue;
@@ -214,39 +223,29 @@ class GLGraphics {
 							x4 = tileTransform.__transformX (tileWidth, tileHeight);
 							y4 = tileTransform.__transformY (tileWidth, tileHeight);
 							
-							__bufferData[offset + 0] = x;
-							__bufferData[offset + 1] = y;
-							__bufferData[offset + 2] = uvX;
-							__bufferData[offset + 3] = uvY;
+							vertexBufferData[vertexOffset + 0] = x;
+							vertexBufferData[vertexOffset + 1] = y;
+							vertexBufferData[vertexOffset + 2] = uvX;
+							vertexBufferData[vertexOffset + 3] = uvY;
 							
-							__bufferData[offset + dataLength + 0] = x2;
-							__bufferData[offset + dataLength + 1] = y2;
-							__bufferData[offset + dataLength + 2] = uvWidth;
-							__bufferData[offset + dataLength + 3] = uvY;
+							vertexBufferData[vertexOffset + dataPerVertex + 0] = x2;
+							vertexBufferData[vertexOffset + dataPerVertex + 1] = y2;
+							vertexBufferData[vertexOffset + dataPerVertex + 2] = uvWidth;
+							vertexBufferData[vertexOffset + dataPerVertex + 3] = uvY;
 							
-							__bufferData[offset + (dataLength * 2) + 0] = x3;
-							__bufferData[offset + (dataLength * 2) + 1] = y3;
-							__bufferData[offset + (dataLength * 2) + 2] = uvX;
-							__bufferData[offset + (dataLength * 2) + 3] = uvHeight;
+							vertexBufferData[vertexOffset + (dataPerVertex * 2) + 0] = x3;
+							vertexBufferData[vertexOffset + (dataPerVertex * 2) + 1] = y3;
+							vertexBufferData[vertexOffset + (dataPerVertex * 2) + 2] = uvX;
+							vertexBufferData[vertexOffset + (dataPerVertex * 2) + 3] = uvHeight;
 							
-							__bufferData[offset + (dataLength * 3) + 0] = x3;
-							__bufferData[offset + (dataLength * 3) + 1] = y3;
-							__bufferData[offset + (dataLength * 3) + 2] = uvX;
-							__bufferData[offset + (dataLength * 3) + 3] = uvHeight;
-							
-							__bufferData[offset + (dataLength * 4) + 0] = x2;
-							__bufferData[offset + (dataLength * 4) + 1] = y2;
-							__bufferData[offset + (dataLength * 4) + 2] = uvWidth;
-							__bufferData[offset + (dataLength * 4) + 3] = uvY;
-							
-							__bufferData[offset + (dataLength * 5) + 0] = x4;
-							__bufferData[offset + (dataLength * 5) + 1] = y4;
-							__bufferData[offset + (dataLength * 5) + 2] = uvWidth;
-							__bufferData[offset + (dataLength * 5) + 3] = uvHeight;
+							vertexBufferData[vertexOffset + (dataPerVertex * 3) + 0] = x4;
+							vertexBufferData[vertexOffset + (dataPerVertex * 3) + 1] = y4;
+							vertexBufferData[vertexOffset + (dataPerVertex * 3) + 2] = uvWidth;
+							vertexBufferData[vertexOffset + (dataPerVertex * 3) + 3] = uvHeight;
 							
 						}
 						
-						bufferPosition += length * stride;
+						quadBufferPosition += length;
 						
 					}
 				
@@ -267,44 +266,47 @@ class GLGraphics {
 					var vertLength = hasUVTData ? 4 : 2;
 					var uvStride = hasUVTData ? 3 : 2;
 					
-					var stride = vertLength + 2;
-					var offset = bufferPosition;
+					var dataPerVertex = vertLength + 2;
+					var vertexOffset = hasUVTData ? vertexBufferPositionUVT : vertexBufferPosition;
 					
-					resizeBuffer (graphics, bufferPosition + (length * stride));
+					if (hasIndices) resizeIndexBuffer (graphics, false, triangleIndexBufferPosition + length);
+					resizeVertexBuffer (graphics, hasUVTData, vertexOffset + (length * dataPerVertex));
 					
-					var __bufferData = graphics.__bufferData;
-					var vertOffset, uvOffset, t;
-					
-					// TODO: Use an index buffer
+					var indexBufferData = graphics.__triangleIndexBufferData;
+					var vertexBufferData = hasUVTData ? graphics.__vertexBufferDataUVT : graphics.__vertexBufferData;
+					var offset, vertOffset, uvOffset, t;
 					
 					for (i in 0...length) {
 						
-						offset = bufferPosition + (i * stride);
+						offset = vertexOffset + (i * dataPerVertex);
 						vertOffset = hasIndices ? indices[i] * 2 : i * 2;
 						uvOffset = hasIndices ? indices[i] * uvStride : i * uvStride;
+						
+						if (hasIndices) indexBufferData[triangleIndexBufferPosition + i] = indices[i];
 						
 						if (hasUVTData) {
 							
 							t = uvtData[uvOffset + 2];
 							
-							__bufferData[offset + 0] = vertices[vertOffset] / t;
-							__bufferData[offset + 1] = vertices[vertOffset + 1] / t;
-							__bufferData[offset + 2] = 0;
-							__bufferData[offset + 3] = 1 / t;
+							vertexBufferData[offset + 0] = vertices[vertOffset] / t;
+							vertexBufferData[offset + 1] = vertices[vertOffset + 1] / t;
+							vertexBufferData[offset + 2] = 0;
+							vertexBufferData[offset + 3] = 1 / t;
 							
 						} else {
 							
-							__bufferData[offset + 0] = vertices[vertOffset];
-							__bufferData[offset + 1] = vertices[vertOffset + 1];
+							vertexBufferData[offset + 0] = vertices[vertOffset];
+							vertexBufferData[offset + 1] = vertices[vertOffset + 1];
 							
 						}
 						
-						__bufferData[offset + vertLength] = hasUVData ? uvtData[uvOffset] : 0;
-						__bufferData[offset + vertLength + 1] = hasUVData ? uvtData[uvOffset + 1] : 0;
+						vertexBufferData[offset + vertLength] = hasUVData ? uvtData[uvOffset] : 0;
+						vertexBufferData[offset + vertLength + 1] = hasUVData ? uvtData[uvOffset + 1] : 0;
 						
 					}
 					
-					bufferPosition += length * stride;
+					if (hasIndices) triangleIndexBufferPosition += length;
+					hasUVTData ? vertexBufferPositionUVT += length * dataPerVertex : vertexBufferPosition += length * dataPerVertex;
 				
 				case END_FILL:
 					
@@ -315,6 +317,62 @@ class GLGraphics {
 					data.skip (type);
 				
 			}
+			
+		}
+		
+		// TODO: Should we use static data specific to Context3DGraphics instead of each Graphics instance?
+		
+		if (quadBufferPosition > 0) {
+			
+			graphics.__quadBuffer.flushVertexBufferData ();
+			
+		}
+		
+		if (triangleIndexBufferPosition > 0) {
+			
+			var buffer = graphics.__triangleIndexBuffer;
+			
+			if (buffer == null || triangleIndexBufferPosition > graphics.__triangleIndexBufferCount) {
+				
+				buffer = context.createIndexBuffer (triangleIndexBufferPosition, DYNAMIC_DRAW);
+				graphics.__triangleIndexBuffer = buffer;
+				graphics.__triangleIndexBufferCount = triangleIndexBufferPosition;
+				
+			}
+			
+			buffer.uploadFromTypedArray (graphics.__triangleIndexBufferData);
+			
+		}
+		
+		if (vertexBufferPosition > 0) {
+			
+			var buffer = graphics.__vertexBuffer;
+			
+			if (buffer == null || vertexBufferPosition > graphics.__vertexBufferCount) {
+				
+				buffer = context.createVertexBuffer (vertexBufferPosition, 4, DYNAMIC_DRAW);
+				graphics.__vertexBuffer = buffer;
+				graphics.__vertexBufferCount = vertexBufferPosition;
+				
+			}
+			
+			buffer.uploadFromTypedArray (graphics.__vertexBufferData);
+			
+		}
+		
+		if (vertexBufferPositionUVT > 0) {
+			
+			var buffer = graphics.__vertexBufferUVT;
+			
+			if (buffer == null || vertexBufferPositionUVT > graphics.__vertexBufferCountUVT) {
+				
+				buffer = context.createVertexBuffer (vertexBufferPositionUVT, 6, DYNAMIC_DRAW);
+				graphics.__vertexBufferUVT = buffer;
+				graphics.__vertexBufferCountUVT = vertexBufferPositionUVT;
+				
+			}
+			
+			buffer.uploadFromTypedArray (graphics.__vertexBufferDataUVT);
 			
 		}
 		
@@ -431,10 +489,17 @@ class GLGraphics {
 		
 		if ((graphics.__bitmap != null && !graphics.__dirty) || !isCompatible (graphics)) {
 			
-			if (graphics.__buffer != null) {
+			if (graphics.__quadBuffer != null || graphics.__triangleIndexBuffer != null) {
 				
-				graphics.__bufferData = null;
-				graphics.__buffer = null;
+				// TODO: Should this be kept?
+				
+				// graphics.__quadBuffer = null;
+				graphics.__triangleIndexBuffer = null;
+				graphics.__triangleIndexBufferData = null;
+				graphics.__vertexBuffer = null;
+				graphics.__vertexBufferData = null;
+				graphics.__vertexBufferDataUVT = null;
+				graphics.__vertexBufferUVT = null;
 				
 			}
 			
@@ -461,12 +526,9 @@ class GLGraphics {
 			
 			if (bounds != null && width >= 1 && height >= 1) {
 				
-				var updatedBuffer = false;
-				
-				if (graphics.__dirty || graphics.__bufferData == null) {
+				if (graphics.__dirty || (graphics.__quadBuffer == null && graphics.__triangleIndexBuffer == null)) {
 					
 					buildBuffer (graphics, renderer);
-					updatedBuffer = true;
 					
 				}
 				
@@ -486,7 +548,11 @@ class GLGraphics {
 				var positionX = 0.0;
 				var positionY = 0.0;
 				
-				var bufferPosition = 0;
+				var quadBufferPosition = 0;
+				var shaderBufferOffset = 0;
+				var triangleIndexBufferPosition = 0;
+				var vertexBufferPosition = 0;
+				var vertexBufferPositionUVT = 0;
 				
 				for (type in graphics.__commands.types) {
 					
@@ -515,6 +581,7 @@ class GLGraphics {
 							
 							var c = data.readBeginShaderFill ();
 							shaderBuffer = c.shaderBuffer;
+							shaderBufferOffset = 0;
 							
 							if (shaderBuffer == null || shaderBuffer.shader == null || shaderBuffer.shader.__bitmap == null) {
 								
@@ -558,7 +625,7 @@ class GLGraphics {
 									renderer.applyBitmapData (bitmap, false, repeat);
 									renderer.applyAlpha (graphics.__owner.__worldAlpha);
 									renderer.applyColorTransform (graphics.__owner.__worldColorTransform);
-									renderer.__updateShaderBuffer ();
+									// renderer.__updateShaderBuffer ();
 									
 								} else {
 									
@@ -572,35 +639,31 @@ class GLGraphics {
 									
 								}
 								
-								if (graphics.__buffer == null || graphics.__bufferContext != renderer.__context) {
+								var end = quadBufferPosition + length;
+								
+								while (quadBufferPosition < end) {
 									
-									graphics.__bufferContext = renderer.__context;
-									graphics.__buffer = gl.createBuffer ();
+									length = Std.int (Math.min (end - quadBufferPosition, context.__quadIndexBufferElements));
+									if (length <= 0) break;
+									
+									if (shaderBuffer != null && !maskRender) {
+										
+										renderer.__updateShaderBuffer (shaderBufferOffset);
+										
+									}
+									
+									if (shader.__position != null) context.setVertexBufferAt (shader.__position.index, graphics.__quadBuffer.vertexBuffer, quadBufferPosition * 16, FLOAT_2);
+									if (shader.__textureCoord != null) context.setVertexBufferAt (shader.__textureCoord.index, graphics.__quadBuffer.vertexBuffer, (quadBufferPosition * 16) + 2, FLOAT_2);
+									
+									context.drawTriangles (context.__quadIndexBuffer, 0, length * 2);
+									
+									shaderBufferOffset += length * 4;
+									quadBufferPosition += length;
 									
 								}
-								
-								context.__bindGLArrayBuffer (graphics.__buffer);
-								
-								if (updatedBuffer) {
-									
-									gl.bufferData (gl.ARRAY_BUFFER, graphics.__bufferData, gl.DYNAMIC_DRAW);
-									
-								}
-								
-								if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, 2, gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, bufferPosition * Float32Array.BYTES_PER_ELEMENT);
-								if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, 4 * Float32Array.BYTES_PER_ELEMENT, (bufferPosition + 2) * Float32Array.BYTES_PER_ELEMENT);
-								
-								// TODO: Use context.drawTriangles
-								context.__flushGL ();
-								if (context.__state.renderToTexture == null) {
-									if (context.__stage.context3D == context && !context.__stage.__renderer.__cleared) context.__stage.__renderer.__clear ();
-								}
-								
-								gl.drawArrays (gl.TRIANGLES, 0, length * 6);
-								bufferPosition += (4 * length * 6);
 								
 								#if gl_stats
-									GLStats.incrementDrawCall (DrawCallContext.STAGE);
+									Context3DStats.incrementDrawCall (DrawCallContext.STAGE);
 								#end
 								
 								renderer.__clearShader ();
@@ -643,8 +706,10 @@ class GLGraphics {
 								var indexBuffer = blankBitmapData.getIndexBuffer (context);
 								context.drawTriangles (indexBuffer);
 								
+								shaderBufferOffset += 4;
+								
 								#if gl_stats
-									GLStats.incrementDrawCall (DrawCallContext.STAGE);
+									Context3DStats.incrementDrawCall (DrawCallContext.STAGE);
 								#end
 								
 								renderer.__clearShader ();
@@ -668,7 +733,9 @@ class GLGraphics {
 							var vertLength = hasUVTData ? 4 : 2;
 							var uvStride = hasUVTData ? 3 : 2;
 							
-							var stride = vertLength + 2;
+							var dataPerVertex = vertLength + 2;
+							var vertexBuffer = hasUVTData ? graphics.__vertexBufferUVT : graphics.__vertexBuffer;
+							var bufferPosition = hasUVTData ? vertexBufferPositionUVT : vertexBufferPosition;
 							
 							var uMatrix = renderer.__getMatrix (graphics.__owner.__renderTransform);
 							var shader;
@@ -682,7 +749,7 @@ class GLGraphics {
 								renderer.applyBitmapData (bitmap, false, repeat);
 								renderer.applyAlpha (1);
 								renderer.applyColorTransform (null);
-								renderer.__updateShaderBuffer ();
+								renderer.__updateShaderBuffer (shaderBufferOffset);
 								
 							} else {
 								
@@ -696,23 +763,8 @@ class GLGraphics {
 								
 							}
 							
-							if (graphics.__buffer == null || graphics.__bufferContext != renderer.__context) {
-								
-								graphics.__bufferContext = renderer.__context;
-								graphics.__buffer = gl.createBuffer ();
-								
-							}
-							
-							context.__bindGLArrayBuffer (graphics.__buffer);
-							
-							if (updatedBuffer) {
-								
-								gl.bufferData (gl.ARRAY_BUFFER, graphics.__bufferData, gl.DYNAMIC_DRAW);
-								
-							}
-							
-							if (shader.__position != null) gl.vertexAttribPointer (shader.__position.index, vertLength, gl.FLOAT, false, stride * Float32Array.BYTES_PER_ELEMENT, bufferPosition * Float32Array.BYTES_PER_ELEMENT);
-							if (shader.__textureCoord != null) gl.vertexAttribPointer (shader.__textureCoord.index, 2, gl.FLOAT, false, stride * Float32Array.BYTES_PER_ELEMENT, (bufferPosition + vertLength) * Float32Array.BYTES_PER_ELEMENT);
+							if (shader.__position != null) context.setVertexBufferAt (shader.__position.index, vertexBuffer, bufferPosition, hasUVTData ? FLOAT_4 : FLOAT_2);
+							if (shader.__textureCoord != null) context.setVertexBufferAt (shader.__textureCoord.index, vertexBuffer, bufferPosition + vertLength, FLOAT_2);
 							
 							switch (culling) {
 								
@@ -728,14 +780,19 @@ class GLGraphics {
 								
 							}
 							
-							// TODO: Use context.drawTriangles
-							context.__flushGL ();
-							if (context.__state.renderToTexture == null) {
-								if (context.__stage.context3D == context && !context.__stage.__renderer.__cleared) context.__stage.__renderer.__clear ();
+							if (hasIndices) {
+								
+								context.drawTriangles (graphics.__triangleIndexBuffer, triangleIndexBufferPosition, length);
+								triangleIndexBufferPosition += length;
+								
+							} else {
+								
+								context.__drawTriangles (bufferPosition, length);
+								
 							}
 							
-							gl.drawArrays (gl.TRIANGLES, 0, length);
-							bufferPosition += (stride * length);
+							shaderBufferOffset += length;
+							hasUVData ? vertexBufferPositionUVT += (dataPerVertex * length) : vertexBufferPosition += (dataPerVertex * length);
 							
 							if (culling != NONE) {
 								
@@ -744,7 +801,7 @@ class GLGraphics {
 							}
 							
 							#if gl_stats
-								GLStats.incrementDrawCall (DrawCallContext.STAGE);
+								Context3DStats.incrementDrawCall (DrawCallContext.STAGE);
 							#end
 							
 							renderer.__clearShader ();
@@ -792,21 +849,76 @@ class GLGraphics {
 	}
 	
 	
-	private static function resizeBuffer (graphics:Graphics, length:Int):Void {
+	private static function resizeIndexBuffer (graphics:Graphics, isQuad:Bool, length:Int):Void {
 		
-		if (graphics.__bufferData == null) {
+		if (isQuad) return;
+		
+		var buffer = (isQuad ? null /*graphics.__quadIndexBufferData*/ : graphics.__triangleIndexBufferData);
+		var position = 0, newBuffer = null;
+		
+		if (buffer == null) {
 			
-			graphics.__bufferData = new Float32Array (length);
+			newBuffer = new UInt16Array (length);
 			
-		} else if (length > graphics.__bufferData.length) {
+		} else if (length > buffer.length) {
 			
-			var buffer = new Float32Array (length);
-			buffer.set (graphics.__bufferData);
-			graphics.__bufferData = buffer;
+			newBuffer = new UInt16Array (length);
+			newBuffer.set (buffer);
+			position = buffer.length;
 			
 		}
 		
-		graphics.__bufferLength = length;
+		if (newBuffer != null) {
+			
+			if (isQuad) {
+				
+				// var vertexIndex = Std.int (position * (4 / 6));
+				
+				// while (position < length) {
+					
+				// 	newBuffer[position] = vertexIndex;
+				// 	newBuffer[position + 1] = vertexIndex + 1;
+				// 	newBuffer[position + 2] = vertexIndex + 2;
+				// 	newBuffer[position + 3] = vertexIndex + 2;
+				// 	newBuffer[position + 4] = vertexIndex + 1;
+				// 	newBuffer[position + 5] = vertexIndex + 3;
+				// 	position += 6;
+				// 	vertexIndex += 4;
+					
+				// }
+				
+				// graphics.__quadIndexBufferData = newBuffer;
+				
+			} else {
+				
+				graphics.__triangleIndexBufferData = newBuffer;
+				
+			}
+			
+		}
+		
+	}
+	
+	
+	private static function resizeVertexBuffer (graphics:Graphics, hasUVTData:Bool, length:Int):Void {
+		
+		var buffer = (hasUVTData ? graphics.__vertexBufferDataUVT : graphics.__vertexBufferData);
+		var newBuffer = null;
+		
+		if (buffer == null) {
+			
+			newBuffer = new Float32Array (length);
+			
+		} else if (length > buffer.length) {
+			
+			newBuffer = new Float32Array (length);
+			newBuffer.set (buffer);
+			
+		}
+		
+		if (newBuffer != null) {
+			hasUVTData ? graphics.__vertexBufferDataUVT = newBuffer : graphics.__vertexBufferData = newBuffer;
+		}
 		
 	}
 	

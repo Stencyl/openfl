@@ -10,7 +10,7 @@ import lime.graphics.RenderContext;
 import lime.graphics.WebGLRenderContext;
 import lime.math.Matrix4;
 import lime.utils.Float32Array;
-import openfl._internal.renderer.opengl.GLMaskShader;
+import openfl._internal.renderer.context3D.Context3DMaskShader;
 import openfl._internal.renderer.ShaderBuffer;
 import openfl.display3D.Context3DClearMask;
 import openfl.display3D.Context3D;
@@ -41,8 +41,7 @@ import openfl.geom.Rectangle;
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
-@:allow(openfl._internal.renderer.opengl)
-@:allow(openfl._internal.renderer.opengl)
+@:allow(openfl._internal.renderer.context3D)
 @:allow(openfl.display3D.textures)
 @:allow(openfl.display3D)
 @:allow(openfl.display)
@@ -80,7 +79,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	@:noCompletion private var __flipped:Bool;
 	@:noCompletion private var __gl:WebGLRenderContext;
 	@:noCompletion private var __height:Int;
-	@:noCompletion private var __maskShader:GLMaskShader;
+	@:noCompletion private var __maskShader:Context3DMaskShader;
 	@:noCompletion private var __matrix:Matrix4;
 	@:noCompletion private var __maskObjects:Array<DisplayObject>;
 	@:noCompletion private var __numClipRects:Int;
@@ -123,8 +122,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		var ext:KHR_debug = __gl.getExtension ("KHR_debug");
 		if (ext != null) {
 			
-			enable (ext.DEBUG_OUTPUT);
-			enable (ext.DEBUG_OUTPUT_SYNCHRONOUS);
+			gl.enable (ext.DEBUG_OUTPUT);
+			gl.enable (ext.DEBUG_OUTPUT_SYNCHRONOUS);
 			
 		}
 		#end
@@ -154,7 +153,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		__initShader (__defaultShader);
 		
-		__maskShader = new GLMaskShader ();
+		__maskShader = new Context3DMaskShader ();
 		
 	}
 	
@@ -342,6 +341,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__currentShader != null) {
 			
+			// TODO: Integrate cleanup with Context3D
 			__currentShader.__disable ();
 			
 		}
@@ -350,6 +350,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			__currentShader = null;
 			__context3D.setProgram (null);
+			__context3D.__flushGLProgram ();
 			return;
 			
 		} else {
@@ -417,7 +418,9 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		if (__stencilReference > 0) {
 			
 			__stencilReference = 0;
-			__context3D.__setGLStencilTest (false);
+			__context3D.setStencilActions ();
+			__context3D.setStencilReferenceValue (0, 0, 0);
+			// __context3D.__setGLStencilTest (false);
 			
 		}
 		
@@ -433,7 +436,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	@:noCompletion private override function __clear ():Void {
 		
-		__context3D.__setGLStencilTest (false);
+		// __context3D.setStencilActions ();
+		// __context3D.__setGLStencilTest (false);
 		
 		if (__stage == null || __stage.__transparent) {
 			
@@ -635,7 +639,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		} else {
 			
 			__stencilReference = 0;
-			__context3D.setStencilActions (FRONT_AND_BACK, ALWAYS);
+			__context3D.setStencilActions ();
+			__context3D.setStencilReferenceValue (0, 0, 0);
 			// __context3D.__setGLStencilTest (false);
 			
 		}
@@ -685,7 +690,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__stencilReference == 0) {
 			
-			__context3D.__setGLStencilTest (true);
+			// __context3D.__setGLStencilTest (true);
 			// __gl.stencilMask (0xFF);
 			__context3D.clear (0, 0, 0, 0, 0, 0, Context3DClearMask.STENCIL);
 			__updatedStencil = true;
@@ -782,6 +787,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		__context3D.setCulling (NONE);
 		__context3D.setDepthTest (false, ALWAYS);
 		__context3D.setStencilActions ();
+		__context3D.setStencilReferenceValue (0, 0, 0);
 		__context3D.setScissorRectangle (null);
 		
 		__blendMode = null;
@@ -928,11 +934,15 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__stencilReference > 0) {
 			
-			__context3D.__setGLStencilTest (true);
+			__context3D.setStencilActions (FRONT_AND_BACK, EQUAL, KEEP, KEEP, KEEP);
+			__context3D.setStencilReferenceValue (__stencilReference);
+			// __context3D.__setGLStencilTest (true);
 			
 		} else {
 			
-			__context3D.__setGLStencilTest (false);
+			__context3D.setStencilActions ();
+			__context3D.setStencilReferenceValue (0, 0, 0);
+			// __context3D.__setGLStencilTest (false);
 			
 		}
 		
@@ -976,6 +986,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	@:noCompletion private override function __setBlendMode (value:BlendMode):Void {
 		
+		if (__overrideBlendMode != null) value = __overrideBlendMode;
 		if (__blendMode == value) return;
 		
 		__blendMode = value;
@@ -1046,7 +1057,10 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__stencilReference > 0) {
 			
-			__context3D.__setGLStencilTest (false);
+			__context3D.setStencilActions ();
+			__context3D.setStencilReferenceValue (0, 0, 0);
+			// __context3D.setStencilActions ();
+			// __context3D.__setGLStencilTest (false);
 			
 		}
 		
@@ -1059,11 +1073,11 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	@:noCompletion private function __updateShaderBuffer ():Void {
+	@:noCompletion private function __updateShaderBuffer (bufferOffset:Int):Void {
 		
 		if (__currentShader != null && __currentShaderBuffer != null) {
 			
-			__currentShader.__updateFromBuffer (__currentShaderBuffer);
+			__currentShader.__updateFromBuffer (__currentShaderBuffer, bufferOffset);
 			
 		}
 		

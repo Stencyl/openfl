@@ -1736,12 +1736,9 @@ class CanvasGraphics {
 			
 		}
 		
-		if (untyped (context).imageSmoothingEnabled != smooth) {
+		if (context.imageSmoothingEnabled != smooth) {
 			
-			untyped (context).mozImageSmoothingEnabled = smooth;
-			//untyped (context).webkitImageSmoothingEnabled = smooth;
-			untyped (context).msImageSmoothingEnabled = smooth;
-			untyped (context).imageSmoothingEnabled = smooth;
+			context.imageSmoothingEnabled = smooth;
 			
 		}
 		

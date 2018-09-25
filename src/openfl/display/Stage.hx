@@ -18,7 +18,7 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 import lime.ui.MouseWheelMode;
 import lime.ui.Window;
 import lime.utils.Log;
-import openfl._internal.renderer.opengl.GLBitmap;
+import openfl._internal.renderer.context3D.Context3DBitmap;
 import openfl._internal.utils.TouchData;
 import openfl.display3D.Context3DClearMask;
 import openfl.display3D.Context3D;
@@ -49,7 +49,7 @@ import openfl.profiler.Telemetry;
 #end
 
 #if gl_stats
-import openfl._internal.renderer.opengl.stats.GLStats;
+import openfl._internal.renderer.opengl.stats.Context3DStats;
 #end
 
 #if (js && html5)
@@ -1392,14 +1392,8 @@ class Stage extends DisplayObjectContainer implements IModule {
 		#end
 		
 		#if gl_stats
-			GLStats.resetDrawCalls();
+			Context3DStats.resetDrawCalls();
 		#end
-		
-		if (context3D == null && __renderer != null) {
-			
-			__renderer.__clear ();
-			
-		}
 		
 		__broadcastEvent (new Event (Event.ENTER_FRAME));
 		__broadcastEvent (new Event (Event.FRAME_CONSTRUCTED));
@@ -1425,13 +1419,17 @@ class Stage extends DisplayObjectContainer implements IModule {
 		__deltaTime = 0;
 		__update (false, true);
 		
-		for (stage3D in stage3Ds) {
+		if (context3D != null) {
 			
-			context3D.__renderStage3D (stage3D);
+			for (stage3D in stage3Ds) {
+				
+				context3D.__renderStage3D (stage3D);
+				
+			}
+			
+			#if !openfl_disable_display_render if (context3D.__present) shouldRender = true; #end
 			
 		}
-		
-		#if !openfl_disable_display_render if (context3D.__present) shouldRender = true; #end
 		
 		if (shouldRender) {
 			
@@ -1440,6 +1438,12 @@ class Stage extends DisplayObjectContainer implements IModule {
 				#if lime_cairo
 				cast (__renderer, CairoRenderer).cairo = context.cairo;
 				#end
+				
+			}
+			
+			if (context3D == null && __renderer != null) {
+				
+				__renderer.__clear ();
 				
 			}
 			
@@ -2041,7 +2045,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 			
 		}
 		
-		if (Mouse.__cursor == MouseCursor.AUTO) {
+		if (Mouse.__cursor == MouseCursor.AUTO && !Mouse.__hidden) {
 			
 			var cursor = null;
 			
@@ -2282,6 +2286,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 		var touchEvent = TouchEvent.__create (type, null, touchX, touchY, target.__globalToLocal (targetPoint, localPoint), cast target);
 		touchEvent.touchPointID = touchId;
 		touchEvent.isPrimaryTouchPoint = isPrimaryTouchPoint;
+		touchEvent.pressure = touch.pressure;
 		
 		__dispatchStack (touchEvent, stack);
 		
@@ -2290,6 +2295,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 			touchEvent = TouchEvent.__create (touchType, null, touchX, touchY, target.__globalToLocal (targetPoint, localPoint), cast target);
 			touchEvent.touchPointID = touchId;
 			touchEvent.isPrimaryTouchPoint = isPrimaryTouchPoint;
+			touchEvent.pressure = touch.pressure;
 			
 			__dispatchStack (touchEvent, stack);
 			
@@ -2302,6 +2308,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 			touchEvent = TouchEvent.__create (TouchEvent.TOUCH_OUT, null, touchX, touchY, touchOverTarget.__globalToLocal (targetPoint, localPoint), cast touchOverTarget);
 			touchEvent.touchPointID = touchId;
 			touchEvent.isPrimaryTouchPoint = isPrimaryTouchPoint;
+			touchEvent.pressure = touch.pressure;
 			
 			__dispatchTarget (touchOverTarget, touchEvent);
 			
@@ -2319,6 +2326,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 				touchEvent.touchPointID = touchId;
 				touchEvent.isPrimaryTouchPoint = isPrimaryTouchPoint;
 				touchEvent.bubbles = false;
+				touchEvent.pressure = touch.pressure;
 				
 				__dispatchTarget (target, touchEvent);
 				
@@ -2336,6 +2344,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 					touchEvent.touchPointID = touchId;
 					touchEvent.isPrimaryTouchPoint = isPrimaryTouchPoint;
 					touchEvent.bubbles = false;
+					touchEvent.pressure = touch.pressure;
 					
 					__dispatchTarget (target, touchEvent);
 					
@@ -2359,6 +2368,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 				touchEvent.touchPointID = touchId;
 				touchEvent.isPrimaryTouchPoint = isPrimaryTouchPoint;
 				touchEvent.bubbles = true;
+				touchEvent.pressure = touch.pressure;
 				
 				__dispatchTarget (target, touchEvent);
 				
@@ -2481,7 +2491,23 @@ class Stage extends DisplayObjectContainer implements IModule {
 	
 	@:noCompletion private function __startDrag (sprite:Sprite, lockCenter:Bool, bounds:Rectangle):Void {
 		
-		__dragBounds = (bounds == null) ? null : bounds.clone ();
+		if (bounds == null) {
+			
+			__dragBounds = null;
+			
+		} else {
+			
+			__dragBounds = new Rectangle ();
+			
+			var right = bounds.right;
+			var bottom = bounds.bottom;
+			__dragBounds.x = right < bounds.x ? right : bounds.x;
+			__dragBounds.y = bottom < bounds.y ? bottom : bounds.y;
+			__dragBounds.width = Math.abs (bounds.width);
+			__dragBounds.height = Math.abs (bounds.height);
+			
+		}
+		
 		__dragObject = sprite;
 		
 		if (__dragObject != null) {
