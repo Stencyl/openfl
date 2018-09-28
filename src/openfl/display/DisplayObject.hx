@@ -935,6 +935,8 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			
 		}
 		
+		event.target = this;
+		
 		return __dispatchWithCapture (event);
 		
 	}
@@ -1094,7 +1096,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		
 		if (stage != null) {
 			
-			return __hitTest (x, y, shapeFlag, null, true, this);
+			return __hitTest (x, y, shapeFlag, null, false, this);
 			
 		} else {
 			
@@ -1659,8 +1661,12 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 				
 				case OPENGL:
 					
+					if (!renderer.__cleared) renderer.__clear ();
+					
 					var renderer:OpenGLRenderer = cast renderer;
 					renderer.setShader (__worldShader);
+					renderer.__context3D.__flushGL ();
+					
 					__customRenderEvent.type = RenderEvent.RENDER_OPENGL;
 				
 				case CAIRO:
