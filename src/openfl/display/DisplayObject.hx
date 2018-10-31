@@ -2089,10 +2089,12 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			} else {
 				
 				// Should we retain these longer?
+				// Retaining __cacheBitmapData2 fixes filters from disappearing...
+				// ..when focusing out/in/out the browser window, html5
 				
 				__cacheBitmapData = __cacheBitmap.bitmapData;
-				__cacheBitmapData2 = null;
-				__cacheBitmapData3 = null;
+				//__cacheBitmapData2 = null;
+				//__cacheBitmapData3 = null;
 				
 			}
 			
@@ -2280,7 +2282,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 							if (filter.__preserveObject) {
 								
 								childRenderer.__setRenderTarget (bitmap3);
-								childRenderer.__renderFilterPass (bitmap, childRenderer.__defaultDisplayShader);
+								childRenderer.__renderFilterPass (bitmap, childRenderer.__defaultDisplayShader, filter.__smooth);
 								
 							}
 							
@@ -2289,7 +2291,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 								shader = filter.__initShader (childRenderer, i);
 								childRenderer.__setBlendMode (filter.__shaderBlendMode);
 								childRenderer.__setRenderTarget (bitmap2);
-								childRenderer.__renderFilterPass (bitmap, shader);
+								childRenderer.__renderFilterPass (bitmap, shader, filter.__smooth);
 								
 								cacheBitmap = bitmap;
 								bitmap = bitmap2;
@@ -2301,7 +2303,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 								
 								childRenderer.__setBlendMode (NORMAL);
 								childRenderer.__setRenderTarget (bitmap);
-								childRenderer.__renderFilterPass (bitmap3, childRenderer.__defaultDisplayShader, false);
+								childRenderer.__renderFilterPass (bitmap3, childRenderer.__defaultDisplayShader, filter.__smooth, false);
 								
 							}
 							
@@ -2414,12 +2416,14 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 						if (__cacheBitmapData != bitmap) {
 							
 							// TODO: Fix issue with swapping __cacheBitmap.__bitmapData
-							__cacheBitmapData.copyPixels (bitmap, bitmap.rect, destPoint);
+							//__cacheBitmapData.copyPixels (bitmap, bitmap.rect, destPoint);
 							
-							// cacheBitmap = __cacheBitmapData;
-							// __cacheBitmapData = bitmap;
-							// __cacheBitmapData2 = cacheBitmap;
-							// __cacheBitmap.__bitmapData = __cacheBitmapData;
+							// Adding __cacheBitmapRenderer = null; makes this work
+							cacheBitmap = __cacheBitmapData;
+							__cacheBitmapData = bitmap;
+							__cacheBitmapData2 = cacheBitmap;
+							__cacheBitmap.__bitmapData = __cacheBitmapData;
+							__cacheBitmapRenderer = null;
 							
 						}
 						

@@ -190,6 +190,7 @@ typedef Element = Dynamic;
 @:access(openfl.display.Sprite)
 @:access(openfl.display.Stage3D)
 @:access(openfl.events.Event)
+@:access(openfl.geom.Matrix)
 @:access(openfl.geom.Point)
 @:access(openfl.ui.GameInput)
 @:access(openfl.ui.Keyboard)
@@ -1399,6 +1400,10 @@ class Stage extends DisplayObjectContainer implements IModule {
 		__broadcastEvent (new Event (Event.FRAME_CONSTRUCTED));
 		__broadcastEvent (new Event (Event.EXIT_FRAME));
 		
+		__renderable = true;
+		__enterFrame (__deltaTime);
+		__deltaTime = 0;
+		
 		var shouldRender = #if !openfl_disable_display_render (__renderer != null #if !openfl_always_render && (__renderDirty || __forceRender) #end) #else false #end;
 		
 		if (__invalidated && shouldRender) {
@@ -1413,10 +1418,6 @@ class Stage extends DisplayObjectContainer implements IModule {
 		Telemetry.__startTiming (TelemetryCommandName.RENDER);
 		#end
 		
-		__renderable = true;
-		
-		__enterFrame (__deltaTime);
-		__deltaTime = 0;
 		__update (false, true);
 		
 		if (__renderer != null) {
@@ -1450,7 +1451,7 @@ class Stage extends DisplayObjectContainer implements IModule {
 				}
 				
 				__renderer.__render (this);
-					
+				
 			} else if (context3D == null) {
 				
 				window.onRender.cancel ();

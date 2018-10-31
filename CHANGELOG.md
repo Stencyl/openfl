@@ -1,3 +1,54 @@
+8.6.4 (10/19/2018)
+------------------
+
+* Improved ES module imports at top-level by making all types available
+
+
+8.6.3 (10/19/2018)
+------------------
+
+* Set Lime to use a hard-coded version (unless -Ddisable-version-check)
+* Improved updating of `Stage3D` `VideoTexture` when video is seeking
+* Fixed cache invalidation in `Bitmap` when using `filters`
+* Fixed how `Context3D` scissoring was handled in non-shared `Stage3D` context
+* Fixed some issues with software `GlowFilter` and `DropShadowFilter`
+
+
+8.6.2 (10/15/2018)
+------------------
+
+* Fixed an issue when using custom WebGL rendering in NPM version
+* Fixed an issue in NPM samples that do not size the stage immediately
+
+
+8.6.1 (10/15/2018)
+------------------
+
+* Fixed use of `VideoTexture` with cube geometry
+* Fixed a regression in the behavior of `scrollRect`
+* Fixed an issue where the bottom of some HTML5 text could be cut off
+* Fixed issues when applying `DropShadowFilter` to `TextField` in software
+
+
+8.6.0 (10/12/2018)
+------------------
+
+* Added initial support for `PixelSnapping` in hardware rendering
+* Added initial support for `DisplacementMapFilter` (hardware only)
+* Added `generate="true"` support for SWF `BitmapData` symbols
+* Improved `BitmapData.fromFile` (and similar methods) when an image fails to load
+* Improved texture smoothing behavior for hardware shader filters
+* Improved synchronization between display list shaders and `Stage3D` shader programs
+* Fixed a regression where `TextField` could fail to render on hardware
+* Fixed a regression in the behavior of `textField.getTextFormat` with default parameters
+* Fixed the clip rectangle for `sprite.scrollRect` on hardware rendering
+* Fixed `stage.color` to return a 32-bit value
+* Fixed `Context3D` scissoring with a width or height of 0
+* Fixed an issue where `scrollRect` could show a pixel improperly
+* Fixed issues when compiling using `-Dtelemetry`
+* Fixed a Haxe 4 compiler deprecation warning
+
+
 8.5.1 (09/27/2018)
 -----------------
 
