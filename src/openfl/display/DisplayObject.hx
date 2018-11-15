@@ -202,7 +202,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private static var __initStage:Stage;
 	@:noCompletion private static var __instanceCount = 0;
 	@:noCompletion private static #if !js inline #end var __supportDOM:Bool #if !js = false #end;
-	@:noCompletion private static var __tempColorTransform = new ColorTransform ();
 	@:noCompletion private static var __tempStack = new ObjectPool<Vector<DisplayObject>> (function () { return new Vector<DisplayObject> (); }, function (stack) { stack.length = 0; });
 	
 	
@@ -1949,16 +1948,17 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		
 		if (__isCacheBitmapRender) return false;
 		
-		var colorTransform = __tempColorTransform;
+		var colorTransform = ColorTransform.__pool.get ();
 		colorTransform.__copyFrom (__worldColorTransform);
 		if (renderer.__worldColorTransform != null) colorTransform.__combine (renderer.__worldColorTransform);
+		var updated = false;
 		
 		if (cacheAsBitmap || (renderer.__type != OPENGL && !colorTransform.__isDefault ())) {
 			
 			var rect = null;
 			
 			var needRender = (__cacheBitmap == null || (__renderDirty && (force || (__children != null && __children.length > 0) || (__graphics != null && __graphics.__dirty))) || opaqueBackground != __cacheBitmapBackground || (renderer.__type != OPENGL && !__cacheBitmapColorTransform.__equals (colorTransform)));
-			var updateTransform = (needRender || (renderer.__type == OPENGL && !__cacheBitmap.__worldTransform.equals (__worldTransform)));
+			var updateTransform = (needRender || !__cacheBitmap.__worldTransform.equals (__worldTransform));
 			var hasFilters = __filters != null;
 			
 			if (hasFilters && !needRender) {
@@ -2077,11 +2077,14 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 					
 				} else {
 					
+					ColorTransform.__pool.release (colorTransform);
+					
 					__cacheBitmap = null;
 					__cacheBitmapData = null;
 					__cacheBitmapData2 = null;
 					__cacheBitmapData3 = null;
 					__cacheBitmapRenderer = null;
+					
 					return true;
 					
 				}
@@ -2089,12 +2092,10 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			} else {
 				
 				// Should we retain these longer?
-				// Retaining __cacheBitmapData2 fixes filters from disappearing...
-				// ..when focusing out/in/out the browser window, html5
 				
 				__cacheBitmapData = __cacheBitmap.bitmapData;
-				//__cacheBitmapData2 = null;
-				//__cacheBitmapData3 = null;
+				__cacheBitmapData2 = null;
+				__cacheBitmapData3 = null;
 				
 			}
 			
@@ -2383,8 +2384,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 							bitmap3 = __cacheBitmapData3;
 						}
 						
-						var sourceRect = Rectangle.__pool.get ();
-						sourceRect.setTo (0, 0, filterWidth, filterHeight);
 						
 						if (__tempPoint == null) __tempPoint = new Point ();
 						var destPoint = __tempPoint;
@@ -2396,7 +2395,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 								bitmap3.copyPixels (bitmap, bitmap.rect, destPoint);
 							}
 							
-							lastBitmap = filter.__applyFilter (bitmap2, bitmap, sourceRect, destPoint);
+							lastBitmap = filter.__applyFilter (bitmap2, bitmap, bitmap.rect, destPoint);
 							
 							if (filter.__preserveObject) {
 								lastBitmap.draw (bitmap3, null, __objectTransform != null ? __objectTransform.colorTransform : null);
@@ -2427,7 +2426,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 							
 						}
 						
-						Rectangle.__pool.release (sourceRect);
 						__cacheBitmap.__imageVersion = __cacheBitmapData.__textureVersion;
 						
 					}
@@ -2452,7 +2450,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 				
 			}
 			
-			return updateTransform;
+			updated = updateTransform;
 			
 		} else if (__cacheBitmap != null) {
 			
@@ -2469,11 +2467,13 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			__cacheBitmapColorTransform = null;
 			__cacheBitmapRenderer = null;
 			
-			return true;
+			updated = true;
 			
 		}
 		
-		return false;
+		ColorTransform.__pool.release (colorTransform);
+		
+		return updated;
 		
 	}
 	
@@ -2543,6 +2543,10 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:keep @:noCompletion private function set_alpha (value:Float):Float {
 		
 		if (value > 1.0) value = 1.0;
+		if (value < 0.0) value = 0.0;
+
+		value = Std.int(value * 256) / 256;
+
 		if (value != __alpha) __setRenderDirty ();
 		return __alpha = value;
 		
@@ -2559,6 +2563,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private function set_blendMode (value:BlendMode):BlendMode {
 		
 		if (value == null) value = NORMAL;
+
 		if (value != __blendMode) __setRenderDirty ();
 		return __blendMode = value;
 		
@@ -2573,8 +2578,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	
 	
 	@:noCompletion private function set_cacheAsBitmap (value:Bool):Bool {
-		
+		if (value != __cacheAsBitmap){ 
 		__setRenderDirty ();
+		}
 		return __cacheAsBitmap = value;
 		
 	}
@@ -2616,15 +2622,16 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			
 			__filters = value;
 			//__updateFilters = true;
+			__setRenderDirty ();
 			
-		} else {
+		} else if (__filters != null) {
 			
 			__filters = null;
 			//__updateFilters = false;
+			__setRenderDirty ();
 			
 		}
 		
-		__setRenderDirty ();
 		
 		return value;
 		

@@ -167,7 +167,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__currentShaderBuffer != null) {
 			
-			__currentShaderBuffer.addOverride ("openfl_Alpha", __alphaValue);
+			__currentShaderBuffer.addFloatOverride ("openfl_Alpha", __alphaValue);
 			
 		} else if (__currentShader != null) {
 			
@@ -187,7 +187,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 				__textureSizeValue[0] = bitmapData.__textureWidth;
 				__textureSizeValue[1] = bitmapData.__textureHeight;
 				
-				__currentShaderBuffer.addOverride ("openfl_TextureSize", __textureSizeValue);
+				__currentShaderBuffer.addFloatOverride ("openfl_TextureSize", __textureSizeValue);
 				
 			}
 			
@@ -244,8 +244,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			if (__currentShaderBuffer != null) {
 				
-				__currentShaderBuffer.addOverride ("openfl_ColorMultiplier", __colorMultipliersValue);
-				__currentShaderBuffer.addOverride ("openfl_ColorOffset", __colorOffsetsValue);
+				__currentShaderBuffer.addFloatOverride ("openfl_ColorMultiplier", __colorMultipliersValue);
+				__currentShaderBuffer.addFloatOverride ("openfl_ColorOffset", __colorOffsetsValue);
 				
 			} else if (__currentShader != null) {
 				
@@ -258,8 +258,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 			if (__currentShaderBuffer != null) {
 				
-				__currentShaderBuffer.addOverride ("openfl_ColorMultiplier", __emptyColorValue);
-				__currentShaderBuffer.addOverride ("openfl_ColorOffset", __emptyColorValue);
+				__currentShaderBuffer.addFloatOverride ("openfl_ColorMultiplier", __emptyColorValue);
+				__currentShaderBuffer.addFloatOverride ("openfl_ColorOffset", __emptyColorValue);
 				
 			} else if (__currentShader != null) {
 				
@@ -279,7 +279,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__currentShaderBuffer != null) {
 			
-			__currentShaderBuffer.addOverride ("openfl_HasColorTransform", __hasColorTransformValue);
+			__currentShaderBuffer.addBoolOverride ("openfl_HasColorTransform", __hasColorTransformValue);
 			
 		} else if (__currentShader != null) {
 			
@@ -294,7 +294,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__currentShaderBuffer != null) {
 			
-			__currentShaderBuffer.addOverride ("openfl_Matrix", matrix);
+			__currentShaderBuffer.addFloatOverride ("openfl_Matrix", matrix);
 			
 		} else if (__currentShader != null) {
 			
@@ -815,12 +815,12 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 					// __gl.scissor (0, 0, __offsetX, __height);
 					__scissorRectangle.setTo (0, 0, __offsetX, __height);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 					// __gl.scissor (__offsetX + __displayWidth, 0, __width, __height);
 					__scissorRectangle.setTo (__offsetX + __displayWidth, 0, __width, __height);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 				}
 				
@@ -829,12 +829,12 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 					// __gl.scissor (0, 0, __width, __offsetY);
 					__scissorRectangle.setTo (0, 0, __width, __offsetY);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 					// __gl.scissor (0, __offsetY + __displayHeight, __width, __height);
 					__scissorRectangle.setTo (0, __offsetY + __displayHeight, __width, __height);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 				}
 				
@@ -922,10 +922,12 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		var w = (__defaultRenderTarget == null) ? __stage.stageWidth : __defaultRenderTarget.width;
 		var h = (__defaultRenderTarget == null) ? __stage.stageHeight : __defaultRenderTarget.height;
 		
-		__offsetX = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformX (0, 0)) : 0;
-		__offsetY = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformY (0, 0)) : 0;
-		__displayWidth = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformX (w, 0) - __offsetX) : w;
-		__displayHeight = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformY (0, h) - __offsetY) : h;
+		__offsetX = 0;
+		__offsetY = 0;
+		
+		__displayWidth = __defaultRenderTarget == null ? __width : w;
+		__displayHeight = __defaultRenderTarget == null ? __height : h;
+		
 		
 		__projection.createOrtho (__offsetX, __displayWidth + __offsetX, __offsetY, __displayHeight + __offsetY, -1000, 1000);
 		__projectionFlipped.createOrtho (__offsetX, __displayWidth + __offsetX, __displayHeight + __offsetY, __offsetY, -1000, 1000);
