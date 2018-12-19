@@ -2,7 +2,7 @@ package openfl._internal;
 
 
 import haxe.PosInfos;
-import lime.utils.Log;
+import openfl._internal.utils.Log;
 import openfl.display.Application;
 import openfl.display.MovieClip;
 
@@ -16,7 +16,7 @@ class Lib {
 	
 	
 	public static var application:Application;
-	public static var current:MovieClip #if flash = flash.Lib.current #end;
+	public static var current: MovieClip #if flash = flash.Lib.current #end;
 	
 	@:noCompletion private static var __sentWarnings = new Map<String, Bool> ();
 	

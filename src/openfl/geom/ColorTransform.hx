@@ -1,9 +1,12 @@
 package openfl.geom; #if !flash
 
 
+import openfl._internal.utils.ObjectPool;
+
+#if lime
 import lime.math.ColorMatrix;
 import lime.utils.Float32Array;
-import lime.utils.ObjectPool;
+#end
 
 
 /**
@@ -56,8 +59,11 @@ import lime.utils.ObjectPool;
 class ColorTransform {
 	
 	
-	@:noCompletion private static var __limeColorMatrix:Float32Array;
 	@:noCompletion private static var __pool = new ObjectPool<ColorTransform> (function () return new ColorTransform (), function (ct) ct.__identity ());
+	
+	#if lime
+	@:noCompletion private static var __limeColorMatrix:Float32Array;
+	#end
 	
 	
 	/**
@@ -272,16 +278,26 @@ class ColorTransform {
 	}
 	
 	
-	@:noCompletion private function __equals (ct:ColorTransform, ?skipAlphaMultiplier:Bool = false):Bool {
+	@:noCompletion private function __equals (ct:ColorTransform, ignoreAlphaMultiplier:Bool):Bool {
 		
-		return (ct != null && redMultiplier == ct.redMultiplier && greenMultiplier == ct.greenMultiplier && blueMultiplier == ct.blueMultiplier && (skipAlphaMultiplier || alphaMultiplier == ct.alphaMultiplier) && redOffset == ct.redOffset && greenOffset == ct.greenOffset && blueOffset == ct.blueOffset && alphaOffset == ct.alphaOffset);
+		return (ct != null && redMultiplier == ct.redMultiplier && greenMultiplier == ct.greenMultiplier && blueMultiplier == ct.blueMultiplier && (ignoreAlphaMultiplier || alphaMultiplier == ct.alphaMultiplier) && redOffset == ct.redOffset && greenOffset == ct.greenOffset && blueOffset == ct.blueOffset && alphaOffset == ct.alphaOffset);
 		
 	}
 	
 	
-	@:noCompletion private function __isDefault ():Bool {
+	@:noCompletion private function __isDefault (ignoreAlphaMultiplier:Bool):Bool {
 		
-		return (redMultiplier == 1 && greenMultiplier == 1 && blueMultiplier == 1 && alphaMultiplier == 1 && redOffset == 0 && greenOffset == 0 && blueOffset == 0 && alphaOffset == 0);
+		if (ignoreAlphaMultiplier) {
+			
+			return (redMultiplier == 1 && greenMultiplier == 1 && blueMultiplier == 1 && /*alphaMultiplier == 1 &&*/ redOffset == 0 && greenOffset == 0 && blueOffset == 0 && alphaOffset == 0);
+			
+		} else {
+			
+			return (redMultiplier == 1 && greenMultiplier == 1 && blueMultiplier == 1 && alphaMultiplier == 1 && redOffset == 0 && greenOffset == 0 && blueOffset == 0 && alphaOffset == 0);
+			
+		}
+		
+		
 		
 	}
 	
@@ -329,6 +345,7 @@ class ColorTransform {
 	}
 	
 	
+	#if lime
 	@:noCompletion private function __toLimeColorMatrix ():ColorMatrix {
 		
 		if (__limeColorMatrix == null) {
@@ -349,6 +366,7 @@ class ColorTransform {
 		return __limeColorMatrix;
 		
 	}
+	#end
 	
 	
 }

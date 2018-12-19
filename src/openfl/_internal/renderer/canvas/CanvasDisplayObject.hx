@@ -1,9 +1,12 @@
 package openfl._internal.renderer.canvas;
 
 
-import lime.math.ARGB;
 import openfl.display.CanvasRenderer;
 import openfl.display.DisplayObject;
+
+#if lime
+import lime.math.ARGB;
+#end
 
 @:access(openfl.display.DisplayObject)
 @:access(openfl.geom.Matrix)
@@ -16,7 +19,10 @@ class CanvasDisplayObject {
 		
 		#if (js && html5)
 		if (displayObject.opaqueBackground == null && displayObject.__graphics == null) return;
-		if (!displayObject.__renderable || displayObject.__worldAlpha <= 0) return;
+		if (!displayObject.__renderable) return;
+		
+		var alpha = renderer.__getAlpha (displayObject.__worldAlpha);
+		if (alpha <= 0) return;
 		
 		if (displayObject.opaqueBackground != null && !displayObject.__isCacheBitmapRender && displayObject.width > 0 && displayObject.height > 0) {
 			

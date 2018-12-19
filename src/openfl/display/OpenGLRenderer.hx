@@ -1,18 +1,9 @@
 package openfl.display; #if !flash
 
 
-import lime.graphics.opengl.ext.KHR_debug;
-import lime.graphics.opengl.GLBuffer;
-import lime.graphics.opengl.GLFramebuffer;
-import lime.graphics.opengl.GLRenderbuffer;
-import lime.graphics.opengl.GLTexture;
-import lime.graphics.RenderContext;
-import lime.graphics.WebGLRenderContext;
-import lime.math.Matrix4;
-import lime.utils.Float32Array;
-import lime.utils.ObjectPool;
 import openfl._internal.renderer.context3D.Context3DMaskShader;
 import openfl._internal.renderer.ShaderBuffer;
+import openfl._internal.utils.ObjectPool;
 import openfl.display3D.Context3DClearMask;
 import openfl.display3D.Context3D;
 import openfl.display.BitmapData;
@@ -23,6 +14,18 @@ import openfl.display.Stage;
 import openfl.geom.ColorTransform;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
+
+#if lime
+import lime.graphics.opengl.ext.KHR_debug;
+import lime.graphics.opengl.GLBuffer;
+import lime.graphics.opengl.GLFramebuffer;
+import lime.graphics.opengl.GLRenderbuffer;
+import lime.graphics.opengl.GLTexture;
+import lime.graphics.RenderContext;
+import lime.graphics.WebGLRenderContext;
+import lime.math.Matrix4;
+import lime.utils.Float32Array;
+#end
 
 #if !openfl_debug
 @:fileXml('tags="haxe,release"')
@@ -62,7 +65,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	@:noCompletion private static var __scissorRectangle = new Rectangle ();
 	@:noCompletion private static var __textureSizeValue = [ 0, 0. ];
 	
-	public var gl:WebGLRenderContext;
+	public var gl:#if lime WebGLRenderContext #else Dynamic #end;
 	
 	@:noCompletion private var __context3D:Context3D;
 	@:noCompletion private var __clipRects:Array<Rectangle>;
@@ -78,16 +81,16 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	@:noCompletion private var __displayHeight:Int;
 	@:noCompletion private var __displayWidth:Int;
 	@:noCompletion private var __flipped:Bool;
-	@:noCompletion private var __gl:WebGLRenderContext;
+	@:noCompletion private var __gl:#if lime WebGLRenderContext #else Dynamic #end;
 	@:noCompletion private var __height:Int;
 	@:noCompletion private var __maskShader:Context3DMaskShader;
-	@:noCompletion private var __matrix:Matrix4;
+	@:noCompletion private var __matrix:#if lime Matrix4 #else Dynamic #end;
 	@:noCompletion private var __maskObjects:Array<DisplayObject>;
 	@:noCompletion private var __numClipRects:Int;
 	@:noCompletion private var __offsetX:Int;
 	@:noCompletion private var __offsetY:Int;
-	@:noCompletion private var __projection:Matrix4;
-	@:noCompletion private var __projectionFlipped:Matrix4;
+	@:noCompletion private var __projection:#if lime Matrix4 #else Dynamic #end;
+	@:noCompletion private var __projectionFlipped:#if lime Matrix4 #else Dynamic #end;
 	@:noCompletion private var __scrollRectMasks:ObjectPool<Shape>;
 	@:noCompletion private var __softwareRenderer:DisplayObjectRenderer;
 	@:noCompletion private var __stencilReference:Int;
@@ -117,7 +120,10 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 		}
 		
+		#if lime
 		__matrix = new Matrix4 ();
+		#end
+		
 		__values = new Array ();
 		
 		#if gl_debug
@@ -136,7 +142,9 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		__softwareRenderer = new CairoRenderer (null);
 		#end
 		
+		#if lime
 		__type = OPENGL;
+		#end
 		
 		__setBlendMode (NORMAL);
 		__context3D.__setGLBlend (true);
@@ -144,8 +152,10 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		__clipRects = new Array ();
 		__maskObjects = new Array ();
 		__numClipRects = 0;
+		#if lime
 		__projection = new Matrix4 ();
 		__projectionFlipped = new Matrix4 ();
+		#end
 		__stencilReference = 0;
 		__tempRect = new Rectangle ();
 		
@@ -196,7 +206,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			if (__currentShader.__bitmap != null) {
 				
 				__currentShader.__bitmap.input = bitmapData;
-				__currentShader.__bitmap.filter = smooth ? LINEAR : NEAREST;
+				__currentShader.__bitmap.filter = (smooth && __allowSmoothing) ? LINEAR : NEAREST;
 				__currentShader.__bitmap.mipFilter = MIPNONE;
 				__currentShader.__bitmap.wrap = repeat ? REPEAT : CLAMP;
 				
@@ -205,7 +215,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			if (__currentShader.__texture != null) {
 				
 				__currentShader.__texture.input = bitmapData;
-				__currentShader.__texture.filter = smooth ? LINEAR : NEAREST;
+				__currentShader.__texture.filter = (smooth && __allowSmoothing) ? LINEAR : NEAREST;
 				__currentShader.__texture.mipFilter = MIPNONE;
 				__currentShader.__texture.wrap = repeat ? REPEAT : CLAMP;
 				
@@ -235,7 +245,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	
 	public function applyColorTransform (colorTransform:ColorTransform):Void {
 		
-		var enabled = (colorTransform != null && !colorTransform.__isDefault ());
+		var enabled = (colorTransform != null && !colorTransform.__isDefault (true));
 		applyHasColorTransform (enabled);
 		
 		if (enabled) {
@@ -305,7 +315,7 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 	}
 	
 	
-	public function getMatrix (transform:Matrix):Matrix4 {
+	public function getMatrix (transform:Matrix):#if lime Matrix4 #else Dynamic #end {
 		
 		if (gl != null) {
 			
@@ -798,7 +808,8 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		
 		if (__defaultRenderTarget == null) {
 			
-			__gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
+			__scissorRectangle.setTo (__offsetX, __offsetY, __displayWidth, __displayHeight);
+			__context3D.setScissorRectangle (__scissorRectangle);
 			
 			__upscaled = (__worldTransform.a != 1 || __worldTransform.d != 1);
 			
@@ -815,12 +826,20 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 					// __gl.scissor (0, 0, __offsetX, __height);
 					__scissorRectangle.setTo (0, 0, __offsetX, __height);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					
+					__context3D.__flushGL ();
+					__gl.clearColor (0, 0, 0, 1);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					// __context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 					// __gl.scissor (__offsetX + __displayWidth, 0, __width, __height);
 					__scissorRectangle.setTo (__offsetX + __displayWidth, 0, __width, __height);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					
+					__context3D.__flushGL ();
+					__gl.clearColor (0, 0, 0, 1);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					// __context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 				}
 				
@@ -829,12 +848,20 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 					// __gl.scissor (0, 0, __width, __offsetY);
 					__scissorRectangle.setTo (0, 0, __width, __offsetY);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					
+					__context3D.__flushGL ();
+					__gl.clearColor (0, 0, 0, 1);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					// __context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 					// __gl.scissor (0, __offsetY + __displayHeight, __width, __height);
 					__scissorRectangle.setTo (0, __offsetY + __displayHeight, __width, __height);
 					__context3D.setScissorRectangle (__scissorRectangle);
-					//__context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
+					
+					__context3D.__flushGL ();
+					__gl.clearColor (0, 0, 0, 1);
+					__gl.clear (__gl.COLOR_BUFFER_BIT);
+					// __context3D.clear (0, 0, 0, 1, 0, 0, Context3DClearMask.COLOR);
 					
 				}
 				
@@ -844,7 +871,9 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 			
 		} else {
 			
-			__gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
+			__scissorRectangle.setTo (__offsetX, __offsetY, __displayWidth, __displayHeight);
+			__context3D.setScissorRectangle (__scissorRectangle);
+			// __gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
 			
 			// __upscaled = (__worldTransform.a != 1 || __worldTransform.d != 1);
 			
@@ -922,15 +951,13 @@ class OpenGLRenderer extends DisplayObjectRenderer {
 		var w = (__defaultRenderTarget == null) ? __stage.stageWidth : __defaultRenderTarget.width;
 		var h = (__defaultRenderTarget == null) ? __stage.stageHeight : __defaultRenderTarget.height;
 		
-		__offsetX = 0;
-		__offsetY = 0;
+		__offsetX = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformX (0, 0)) : 0;
+		__offsetY = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformY (0, 0)) : 0;
+		__displayWidth = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformX (w, 0) - __offsetX) : w;
+		__displayHeight = __defaultRenderTarget == null ? Math.round (__worldTransform.__transformY (0, h) - __offsetY) : h;
 		
-		__displayWidth = __defaultRenderTarget == null ? __width : w;
-		__displayHeight = __defaultRenderTarget == null ? __height : h;
-		
-		
-		__projection.createOrtho (__offsetX, __displayWidth + __offsetX, __offsetY, __displayHeight + __offsetY, -1000, 1000);
-		__projectionFlipped.createOrtho (__offsetX, __displayWidth + __offsetX, __displayHeight + __offsetY, __offsetY, -1000, 1000);
+		__projection.createOrtho (0, __displayWidth + __offsetX * 2, 0, __displayHeight + __offsetY * 2, -1000, 1000);
+		__projectionFlipped.createOrtho (0, __displayWidth + __offsetX * 2, __displayHeight + __offsetY * 2, 0, -1000, 1000);
 		
 	}
 	

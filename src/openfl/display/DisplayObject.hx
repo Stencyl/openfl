@@ -1,10 +1,6 @@
 package openfl.display; #if !flash
 
 
-import lime._internal.graphics.ImageCanvasUtil; // TODO
-import lime.graphics.cairo.Cairo;
-import lime.ui.MouseCursor;
-import lime.utils.ObjectPool;
 import openfl._internal.renderer.cairo.CairoBitmap;
 import openfl._internal.renderer.cairo.CairoDisplayObject;
 import openfl._internal.renderer.cairo.CairoGraphics;
@@ -17,6 +13,7 @@ import openfl._internal.renderer.context3D.Context3DBitmap;
 import openfl._internal.renderer.context3D.Context3DDisplayObject;
 import openfl._internal.renderer.context3D.Context3DGraphics;
 import openfl._internal.renderer.context3D.Context3DShape;
+import openfl._internal.utils.ObjectPool;
 import openfl._internal.Lib;
 import openfl.display.Stage;
 import openfl.errors.TypeError;
@@ -32,7 +29,13 @@ import openfl.geom.Matrix;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
 import openfl.geom.Transform;
+import openfl.ui.MouseCursor;
 import openfl.Vector;
+
+#if lime
+import lime._internal.graphics.ImageCanvasUtil; // TODO
+import lime.graphics.cairo.Cairo;
+#end
 
 #if (js && html5)
 import js.html.CanvasElement;
@@ -759,7 +762,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private var __cacheBitmapData3:BitmapData;
 	@:noCompletion private var __cacheBitmapMatrix:Matrix;
 	@:noCompletion private var __cacheBitmapRenderer:DisplayObjectRenderer;
-	@:noCompletion private var __cairo:Cairo;
+	@:noCompletion private var __cairo:#if lime Cairo #else Dynamic #end;
 	@:noCompletion private var __children:Array<DisplayObject>;
 	@:noCompletion private var __customRenderClear:Bool;
 	@:noCompletion private var __customRenderEvent:RenderEvent;
@@ -1649,6 +1652,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	
 	@:noCompletion private function __renderEvent (renderer:DisplayObjectRenderer):Void {
 		
+		#if lime
 		if (__customRenderEvent != null && __renderable) {
 			
 			__customRenderEvent.allowSmoothing = renderer.__allowSmoothing;
@@ -1709,6 +1713,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			}
 			
 		}
+		#end
 		
 	}
 	
@@ -1884,7 +1889,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 				if (__blendMode == null || __blendMode == NORMAL) {
 					
 					// TODO: Handle multiple blend modes better
-					__worldBlendMode = renderParent.__blendMode;
+					__worldBlendMode = renderParent.__worldBlendMode;
 					
 				} else {
 					
@@ -1946,20 +1951,22 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	
 	@:noCompletion private function __updateCacheBitmap (renderer:DisplayObjectRenderer, force:Bool):Bool {
 		
+		#if lime
 		if (__isCacheBitmapRender) return false;
+		#if openfl_disable_cacheasbitmap return false; #end
 		
 		var colorTransform = ColorTransform.__pool.get ();
 		colorTransform.__copyFrom (__worldColorTransform);
 		if (renderer.__worldColorTransform != null) colorTransform.__combine (renderer.__worldColorTransform);
 		var updated = false;
 		
-		if (cacheAsBitmap || (renderer.__type != OPENGL && !colorTransform.__isDefault ())) {
+		if (cacheAsBitmap || (renderer.__type != OPENGL && !colorTransform.__isDefault (true))) {
 			
 			var rect = null;
 			
-			var needRender = (__cacheBitmap == null || (__renderDirty && (force || (__children != null && __children.length > 0) || (__graphics != null && __graphics.__dirty))) || opaqueBackground != __cacheBitmapBackground || (renderer.__type != OPENGL && !__cacheBitmapColorTransform.__equals (colorTransform)));
+			var needRender = (__cacheBitmap == null || (__renderDirty && (force || (__children != null && __children.length > 0) || (__graphics != null && __graphics.__dirty))) || opaqueBackground != __cacheBitmapBackground || (renderer.__type != OPENGL && !__cacheBitmapColorTransform.__equals (colorTransform, true)));
 			var updateTransform = (needRender || !__cacheBitmap.__worldTransform.equals (__worldTransform));
-			var hasFilters = __filters != null;
+			var hasFilters = #if !openfl_disable_filters __filters != null #else false #end;
 			
 			if (hasFilters && !needRender) {
 				
@@ -2134,6 +2141,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 				
 				var renderType = renderer.__type;
 				
+				#if !openfl_force_gl_cacheasbitmap
 				if (renderType == OPENGL) {
 					
 					if (#if !openfl_disable_gl_cacheasbitmap __shouldCacheHardware (null) == false #else true #end) {
@@ -2147,7 +2155,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 					}
 					
 				}
+				#end
 				
+				#if lime
 				if (__cacheBitmapRenderer == null || renderType != __cacheBitmapRenderer.__type) {
 					
 					if (renderType == OPENGL) {
@@ -2177,6 +2187,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 					__cacheBitmapRenderer.__worldColorTransform = new ColorTransform ();
 					
 				}
+				#else
+				return false;
+				#end
 				
 				if (__cacheBitmapColorTransform == null) __cacheBitmapColorTransform = new ColorTransform ();
 				
@@ -2432,8 +2445,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 					
 					__cacheBitmapColorTransform.__copyFrom (colorTransform);
 					
-					if (!__cacheBitmapColorTransform.__isDefault ()) {
+					if (!__cacheBitmapColorTransform.__isDefault (true)) {
 						
+						__cacheBitmapColorTransform.alphaMultiplier = 1;
 						__cacheBitmapData.colorTransform (__cacheBitmapData.rect, __cacheBitmapColorTransform);
 						
 					}
@@ -2474,6 +2488,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		ColorTransform.__pool.release (colorTransform);
 		
 		return updated;
+		#else
+		return false;
+		#end
 		
 	}
 	
@@ -2978,7 +2995,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		__setTransformDirty ();
 		__objectTransform.matrix = value.matrix;
 		
-		if (!__objectTransform.colorTransform.__equals (value.colorTransform)) {
+		if (!__objectTransform.colorTransform.__equals (value.colorTransform, true)) {
 			
 			__objectTransform.colorTransform.__copyFrom (value.colorTransform);
 			__setRenderDirty ();

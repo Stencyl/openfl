@@ -1,7 +1,6 @@
 package openfl.display; #if !flash
 
 
-import lime.utils.Log;
 import openfl._internal.formats.swf.SWFLite;
 import openfl._internal.symbols.BitmapSymbol;
 import openfl._internal.symbols.ButtonSymbol;
@@ -14,12 +13,12 @@ import openfl._internal.symbols.SWFSymbol;
 import openfl._internal.symbols.timeline.Frame;
 import openfl._internal.symbols.timeline.FrameObject;
 import openfl._internal.symbols.timeline.FrameObjectType;
+import openfl._internal.utils.Log;
 import openfl.errors.ArgumentError;
 import openfl.events.Event;
 import openfl.events.MouseEvent;
 import openfl.filters.*;
 import openfl.geom.ColorTransform;
-import openfl.text.TextField;
 
 #if hscript
 import hscript.Interp;
@@ -981,8 +980,7 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 			
 			displayObject.transform.colorTransform = frameObject.colorTransform;
 			
-		}
-		else if (reset && !displayObject.transform.colorTransform.__isDefault()) {
+		} else if (reset && !displayObject.transform.colorTransform.__isDefault (true)) {
 			
 			displayObject.transform.colorTransform = new ColorTransform();
 			
@@ -1116,7 +1114,7 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 		}
 		
 		__mouseIsDown = true;
-		stage.addEventListener (MouseEvent.MOUSE_UP, __onMouseUp);
+		stage.addEventListener (MouseEvent.MOUSE_UP, __onMouseUp, true);
 		
 	}
 	
@@ -1131,7 +1129,7 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 			
 		}
 		
-		if (event.currentTarget == this && __hasOver) {
+		if (event.target == this && __hasOver) {
 			
 			gotoAndStop ("_over");
 			
@@ -1204,16 +1202,14 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 					
 					addEventListener (MouseEvent.ROLL_OVER, __onRollOver);
 					addEventListener (MouseEvent.ROLL_OUT, __onRollOut);
-					addEventListener (MouseEvent.MOUSE_UP, __onMouseUp);
 					addEventListener (MouseEvent.MOUSE_DOWN, __onMouseDown);
-						
+					
 				}
 				
 			} else {
 				
 				removeEventListener (MouseEvent.ROLL_OVER, __onRollOver);
 				removeEventListener (MouseEvent.ROLL_OUT, __onRollOut);
-				removeEventListener (MouseEvent.MOUSE_UP, __onMouseUp);
 				removeEventListener (MouseEvent.MOUSE_DOWN, __onMouseDown);
 				
 			}
