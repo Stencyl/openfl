@@ -4,7 +4,7 @@ executors:
   haxe-34:
     working_directory: /workspace/openfl/
     docker:
-      - image: openfl/openfl-tests-unit-3.4:0.0.5
+      - image: openfl/openfl-tests-unit-3.4:0.0.6
   npm:
     working_directory: /workspace/openfl/
     docker:
@@ -152,10 +152,10 @@ commands:
          command: npm install
      - run:
          name: Build Library
-         command: npm run build
+         command: npm run build -s
      - run:
          name: Run Tests
-         command: npm run test
+         command: npm run test -s
 
 
 jobs:
