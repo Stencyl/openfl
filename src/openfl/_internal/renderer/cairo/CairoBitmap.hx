@@ -1,7 +1,6 @@
 package openfl._internal.renderer.cairo;
 
 import openfl.display.Bitmap;
-import openfl.display.CairoRenderer;
 #if lime
 import lime.graphics.cairo.CairoFilter;
 import lime.graphics.cairo.CairoPattern;
@@ -56,6 +55,9 @@ class CairoBitmap
 			}
 
 			renderer.__popMaskObject(bitmap);
+
+			// TODO: Find cause of leaking blend modes?
+			renderer.__setBlendMode(NORMAL);
 		}
 		#end
 	}

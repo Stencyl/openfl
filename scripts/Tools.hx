@@ -92,7 +92,19 @@ class Tools
 		switch (System.hostPlatform)
 		{
 			case WINDOWS:
+				// var is64 = neko.Lib.load("std", "sys_is64", 0)();
 				untyped $loader.path = $array(path + "Windows/", $loader.path);
+				// if (CFFI.enabled)
+				// {
+				try
+				{
+					neko.Lib.load("lime", "lime_application_create", 0);
+				}
+				catch (e:Dynamic)
+				{
+					untyped $loader.path = $array(path + "Windows64/", $loader.path);
+				}
+			// }
 
 			case MAC:
 				// untyped $loader.path = $array(path + "Mac/", $loader.path);
@@ -230,7 +242,8 @@ class Tools
 					switch (superClassData.nameSpace)
 					{
 						case NPublic(_) if (!~/^flash\./.match(superClassData.nameSpaceName)):
-							baseClassName = ("" == superClassData.nameSpaceName ? "" : superClassData.nameSpaceName + ".") + superClassData.name;
+							baseClassName = ("" == superClassData.nameSpaceName ? "" : superClassData.nameSpaceName + ".")
+								+ superClassData.name;
 						case _:
 					}
 				}
@@ -309,16 +322,17 @@ class Tools
 					}
 				}
 
-				var context = {
-					PACKAGE_NAME: packageName,
-					NATIVE_CLASS_NAME: StringTools.trim(className),
-					CLASS_NAME: name,
-					BASE_CLASS_NAME: baseClassName,
-					SWF_ID: swfAsset.id,
-					SYMBOL_ID: symbolID,
-					PREFIX: prefix,
-					CLASS_PROPERTIES: classProperties
-				};
+				var context =
+					{
+						PACKAGE_NAME: packageName,
+						NATIVE_CLASS_NAME: StringTools.trim(className),
+						CLASS_NAME: name,
+						BASE_CLASS_NAME: baseClassName,
+						SWF_ID: swfAsset.id,
+						SYMBOL_ID: symbolID,
+						PREFIX: prefix,
+						CLASS_PROPERTIES: classProperties
+					};
 				var template = new Template(templateData);
 				var targetPath;
 
@@ -336,7 +350,8 @@ class Tools
 					+ "/"
 					+ prefix
 					+ name
-					+ ".hx", AssetType.TEMPLATE);
+					+ ".hx",
+					AssetType.TEMPLATE);
 				templateFile.data = template.execute(context);
 				output.assets.push(templateFile);
 
@@ -480,22 +495,24 @@ class Tools
 					}
 				}
 
-				var context = {
-					PACKAGE_NAME: packageName,
-					NATIVE_CLASS_NAME: className,
-					CLASS_NAME: name,
-					BASE_CLASS_NAME: baseClassName,
-					SWF_ID: swfID,
-					SYMBOL_ID: symbolID,
-					PREFIX: "",
-					CLASS_PROPERTIES: classProperties
-				};
+				var context =
+					{
+						PACKAGE_NAME: packageName,
+						NATIVE_CLASS_NAME: className,
+						CLASS_NAME: name,
+						BASE_CLASS_NAME: baseClassName,
+						SWF_ID: swfID,
+						SYMBOL_ID: symbolID,
+						PREFIX: "",
+						CLASS_PROPERTIES: classProperties
+					};
 				var template = new Template(templateData);
 
 				var templateFile = new Asset("", Path.combine(targetPath, Path.directory(symbol.className.split(".").join("/")))
 					+ "/"
 					+ name
-					+ ".hx", AssetType.TEMPLATE);
+					+ ".hx",
+					AssetType.TEMPLATE);
 				templateFile.data = template.execute(context);
 				output.push(templateFile);
 
@@ -638,6 +655,19 @@ class Tools
 
 	private static function processFile(sourcePath:String, targetPath:String, prefix:String = null):Bool
 	{
+		#if false // TODO: Make default
+		if (targetPath == null)
+		{
+			targetPath = Path.withoutExtension(sourcePath) + ".zip";
+		}
+		System.mkdir(Path.directory(targetPath));
+
+		var bytes:ByteArray = File.getBytes(sourcePath);
+		var swf = new SWF(bytes);
+		var exporter = new SWFLibraryExporter(swf.data, targetPath);
+
+		return true;
+		#else
 		var bytes:ByteArray = File.getBytes(sourcePath);
 		var swf = new SWF(bytes);
 		var exporter = new SWFLiteExporter(swf.data);
@@ -775,6 +805,7 @@ class Tools
 		File.saveContent(Path.combine(targetPath, "include.xml"), includeXML);
 
 		return true;
+		#end
 	}
 
 	private static function processLibraries(project:HXProject):HXProject
@@ -790,6 +821,7 @@ class Tools
 		var output = new HXProject();
 		var embeddedSWF = false;
 		var embeddedSWFLite = false;
+		var embeddedAnimate = false;
 		// var filterClasses = [];
 
 		for (library in project.libraries)
@@ -803,6 +835,100 @@ class Tools
 				type = Path.extension(library.sourcePath).toLowerCase();
 			}
 
+			#if !nodejs
+			if (type == "animate")
+			{
+				if (!FileSystem.exists(library.sourcePath))
+				{
+					Log.warn("Could not find library file: " + library.sourcePath);
+					continue;
+				}
+
+				Log.info("", " - \x1b[1mProcessing library:\x1b[0m " + library.sourcePath + " [SWF]");
+
+				var cacheAvailable = false;
+				var cacheDirectory = null;
+				var cacheFile = null;
+
+				if (targetDirectory != null)
+				{
+					cacheDirectory = targetDirectory + "/obj/libraries";
+					cacheFile = cacheDirectory + "/" + library.name + ".zip";
+
+					if (FileSystem.exists(cacheFile))
+					{
+						var cacheDate = FileSystem.stat(cacheFile).mtime;
+						var toolDate = FileSystem.stat(Haxelib.getPath(new Haxelib("openfl"), true) + "/scripts/tools.n").mtime;
+						var sourceDate = FileSystem.stat(library.sourcePath).mtime;
+
+						if (sourceDate.getTime() < cacheDate.getTime() && toolDate.getTime() < cacheDate.getTime())
+						{
+							cacheAvailable = true;
+						}
+					}
+
+					if (!cacheAvailable)
+					{
+						if (cacheDirectory != null)
+						{
+							System.mkdir(cacheDirectory);
+						}
+
+						var bytes:ByteArray = File.getBytes(library.sourcePath);
+						var swf = new SWF(bytes);
+						var exporter = new SWFLibraryExporter(swf.data, cacheFile);
+
+						if (true || library.generate)
+						{
+							var targetPath;
+
+							if (project.target == IOS)
+							{
+								targetPath = Path.tryFullPath(targetDirectory) + "/" + project.app.file + "/" + "/haxe/_generated";
+							}
+							else
+							{
+								targetPath = Path.tryFullPath(targetDirectory) + "/haxe/_generated";
+							}
+
+							var generatedClasses = exporter.generateClasses(targetPath, output.assets, library.prefix);
+
+							// for (className in generatedClasses)
+							// {
+							// 	output.haxeflags.push(className);
+							// }
+
+							// if (cacheDirectory != null)
+							// {
+							// 	File.saveContent(cacheDirectory + "/classNames.txt", generatedClasses.join("\n"));
+							// }
+						}
+					}
+					else
+					{
+						// var generatedClasses = File.getContent(cacheDirectory + "/classNames.txt").split("\n");
+
+						// for (className in generatedClasses)
+						// {
+						// 	output.haxeflags.push(className);
+						// }
+					}
+
+					var asset = new Asset(cacheFile, "lib/" + library.name + ".zip", AssetType.BUNDLE);
+					asset.library = library.name;
+					// This causes problems with the Flash target (embedding a ZIP... use a different method?)
+					// if (library.embed != null)
+					// {
+					// 	asset.embed = library.embed;
+					// }
+					asset.embed = false;
+					output.assets.push(asset);
+
+					embeddedAnimate = true;
+				}
+			}
+			else
+			#end
 			if (type == "swf" || type == "swf_lite" || type == "swflite")
 			{
 				if (project.target == Platform.FLASH || project.target == Platform.AIR)
@@ -815,9 +941,8 @@ class Tools
 
 					Log.info("", " - \x1b[1mProcessing library:\x1b[0m " + library.sourcePath + " [SWF]");
 
-					var swf = new Asset(library.sourcePath, "lib/" + library.name + "/" + library.name + ".swf", AssetType.BINARY);
-					swf.id = "lib/" + library.name + "/" + library.name + ".swf";
-					swf.library = library.name;
+					var swf = new Asset(library.sourcePath, library.name + ".swf", AssetType.BINARY);
+					// swf.library = library.name;
 
 					var embed = (library.embed != false);
 					// var embed = (library.embed == true); // default to non-embedded
@@ -837,8 +962,11 @@ class Tools
 
 					var data = AssetHelper.createManifest(output, library.name);
 					data.libraryType = "openfl._internal.formats.swf.SWFLibrary";
-					data.libraryArgs = ["lib/" + library.name + "/" + library.name + ".swf"];
+					data.libraryArgs = [library.name + ".swf"];
 					data.name = library.name;
+					data.rootPath = "lib/" + library.name;
+
+					swf.library = library.name;
 
 					var asset = new Asset("", "lib/" + library.name + ".json", AssetType.MANIFEST);
 					asset.id = "libraries/" + library.name + ".json";
@@ -874,6 +1002,8 @@ class Tools
 
 					// project.haxelibs.push (new Haxelib ("swf"));
 
+					var uuid = null;
+
 					var cacheAvailable = false;
 					var cacheDirectory = null;
 					var merge = new HXProject();
@@ -902,7 +1032,7 @@ class Tools
 						{
 							if (Path.extension(file) == "png" || Path.extension(file) == "jpg")
 							{
-								var asset = new Asset(cacheDirectory + "/" + file, "lib/" + library.name + "/" + file, AssetType.IMAGE);
+								var asset = new Asset(cacheDirectory + "/" + file, file, AssetType.IMAGE);
 
 								if (library.embed != null)
 								{
@@ -913,8 +1043,8 @@ class Tools
 							}
 						}
 
-						var swfLiteAsset = new Asset(cacheDirectory + "/" + library.name + SWFLITE_DATA_SUFFIX, "lib/" + library.name + "/" + library.name
-							+ SWFLITE_DATA_SUFFIX, AssetType.TEXT);
+						var swfLiteAsset = new Asset(cacheDirectory + "/" + library.name + SWFLITE_DATA_SUFFIX, library.name + SWFLITE_DATA_SUFFIX,
+							AssetType.TEXT);
 
 						if (library.embed != null)
 						{
@@ -933,10 +1063,20 @@ class Tools
 							}
 						}
 
+						if (FileSystem.exists(cacheDirectory + "/uuid.txt"))
+						{
+							uuid = File.getContent(cacheDirectory + "/uuid.txt");
+						}
+
 						embeddedSWFLite = true;
 					}
 					else
 					{
+						if (uuid == null)
+						{
+							uuid = StringTools.generateUUID(20);
+						}
+
 						if (cacheDirectory != null)
 						{
 							System.mkdir(cacheDirectory);
@@ -964,7 +1104,7 @@ class Tools
 						{
 							var type = exporter.bitmapTypes.get(id) == BitmapType.PNG ? "png" : "jpg";
 							var symbol:BitmapSymbol = cast swfLite.symbols.get(id);
-							symbol.path = "lib/" + library.name + "/" + id + "." + type;
+							symbol.path = id + "." + type;
 							swfLite.symbols.set(id, symbol);
 
 							var asset = new Asset("", symbol.path, AssetType.IMAGE);
@@ -992,7 +1132,7 @@ class Tools
 
 							if (exporter.bitmapTypes.get(id) == BitmapType.JPEG_ALPHA)
 							{
-								symbol.alpha = "lib/" + library.name + "/" + id + "a.png";
+								symbol.alpha = id + "a.png";
 
 								var asset = new Asset("", symbol.alpha, AssetType.IMAGE);
 								var assetData = exporter.bitmapAlpha.get(id);
@@ -1028,7 +1168,7 @@ class Tools
 
 						// }
 
-						var swfLiteAsset = new Asset("", "lib/" + library.name + "/" + library.name + SWFLITE_DATA_SUFFIX, AssetType.TEXT);
+						var swfLiteAsset = new Asset("", library.name + SWFLITE_DATA_SUFFIX, AssetType.TEXT);
 						var swfLiteAssetData = swfLite.serialize();
 
 						if (cacheDirectory != null)
@@ -1061,7 +1201,7 @@ class Tools
 								targetPath = Path.tryFullPath(targetDirectory) + "/haxe/_generated";
 							}
 
-							var generatedClasses = generateSWFLiteClasses(targetPath, output.assets, swfLite, swfLiteAsset.id, library.prefix);
+							var generatedClasses = generateSWFLiteClasses(targetPath, output.assets, swfLite, uuid, library.prefix);
 
 							for (className in generatedClasses)
 							{
@@ -1074,17 +1214,33 @@ class Tools
 							}
 						}
 
+						if (cacheDirectory != null)
+						{
+							File.saveContent(cacheDirectory + "/uuid.txt", uuid);
+						}
+
 						embeddedSWFLite = true;
 					}
 
 					var data = AssetHelper.createManifest(merge);
 					data.libraryType = "openfl._internal.formats.swf.SWFLiteLibrary";
-					data.libraryArgs = ["lib/" + library.name + "/" + library.name + SWFLITE_DATA_SUFFIX];
+					data.libraryArgs = [library.name + SWFLITE_DATA_SUFFIX, uuid];
 					data.name = library.name;
+
+					if (library.embed == true || (library.embed == null && (project.platformType == WEB || project.target == AIR)))
+					{
+						data.rootPath = "lib/" + library.name;
+					}
+					else
+					{
+						data.rootPath = library.name;
+					}
 
 					for (asset in merge.assets)
 					{
 						asset.library = library.name;
+						asset.targetPath = "lib/" + library.name + "/" + asset.targetPath;
+						asset.resourceName = asset.targetPath;
 					}
 
 					output.merge(merge);
@@ -1125,7 +1281,7 @@ class Tools
 			// }
 		}
 
-		if (embeddedSWF || embeddedSWFLite)
+		if (embeddedSWF || embeddedSWFLite || embeddedAnimate)
 		{
 			var generatedPath;
 
