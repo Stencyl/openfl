@@ -1476,6 +1476,8 @@ class CanvasGraphics
 		{
 			context = cast renderer.context;
 
+			context.beginPath();
+
 			var positionX = 0.0;
 			var positionY = 0.0;
 
@@ -1544,9 +1546,9 @@ class CanvasGraphics
 
 					case DRAW_RECT:
 						var c = data.readDrawRect();
-						context.beginPath();
+						// context.beginPath();
 						context.rect(c.x - offsetX, c.y - offsetY, c.width, c.height);
-						context.closePath();
+						// context.closePath();
 
 					case DRAW_ROUND_RECT:
 						var c = data.readDrawRoundRect();
@@ -1568,6 +1570,8 @@ class CanvasGraphics
 						data.skip(type);
 				}
 			}
+
+			context.closePath();
 
 			data.destroy();
 		}

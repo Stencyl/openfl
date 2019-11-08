@@ -49,7 +49,7 @@ class TextEngine
 	public var backgroundColor:Int;
 	public var border:Bool;
 	public var borderColor:Int;
-	public var bottomScrollV(get, null):Int;
+	public var bottomScrollV(default, null):Int;
 	public var bounds:Rectangle;
 	public var caretIndex:Int;
 	public var embedFonts:Bool;
@@ -64,7 +64,7 @@ class TextEngine
 	public var lineWidths:Vector<Float>;
 	public var maxChars:Int;
 	public var maxScrollH(default, null):Int;
-	public var maxScrollV(get, null):Int;
+	public var maxScrollV(default, null):Int;
 	public var multiline:Bool;
 	public var numLines(default, null):Int;
 	public var restrict(default, set):UTF8String;
@@ -626,7 +626,7 @@ class TextEngine
 			}
 
 			currentLineHeight = Math.max(currentLineHeight, group.height);
-			currentLineWidth = group.offsetX - GUTTER + group.width;
+			currentLineWidth = Math.max(currentLineWidth, group.offsetX - GUTTER + group.width);
 
 			// TODO: confirm whether textWidth ignores margins, indents, etc or not
 			// currently they are not ignored, and setTextAlignment() happens to work due to this (gut feeling is that it does ignore them)
@@ -679,6 +679,7 @@ class TextEngine
 			currentLineDescent = descent;
 			currentLineLeading = leading;
 
+			// TODO: integer line heights/text heights
 			currentTextHeight = ascent + descent;
 			textHeight = currentTextHeight;
 		}
@@ -718,7 +719,7 @@ class TextEngine
 					}
 
 					height = textHeight + GUTTER * 2;
-					bottomScrollV = numLines;
+				// bottomScrollV = numLines;
 
 				default:
 			}
@@ -735,6 +736,8 @@ class TextEngine
 		}
 
 		if (scrollH > maxScrollH) scrollH = maxScrollH;
+
+		updateScrollV();
 	}
 
 	private function getLayoutGroups():Void
@@ -1289,9 +1292,8 @@ class TextEngine
 		setLineMetrics();
 
 		var wrap;
-		var maxLoops = text.length +
-			1; // Do an extra iteration to ensure a LayoutGroup is created in case the last line is empty (multiline or trailing line break).
-		// TODO: check if the +1 is still needed, since the extra layout group is handled separately
+		var maxLoops = text.length + 1;
+		// Do an extra iteration to ensure a LayoutGroup is created in case the last line is empty (trailing line break).
 
 		while (textIndex < maxLoops)
 		{
@@ -1587,7 +1589,7 @@ class TextEngine
 			layoutGroup.ascent = ascent;
 			layoutGroup.descent = descent;
 			layoutGroup.leading = leading;
-			layoutGroup.lineIndex = lineIndex;
+			layoutGroup.lineIndex = lineIndex - 1;
 			layoutGroup.offsetX = getBaseX(); // TODO: double check it doesn't default to GUTTER or something
 			layoutGroup.offsetY = offsetY + GUTTER;
 			layoutGroup.width = 0;
@@ -1760,8 +1762,9 @@ class TextEngine
 			textHeight = 0;
 			numLines = 1;
 			maxScrollH = 0;
-			maxScrollV = 1;
-			bottomScrollV = 1;
+			// maxScrollV = 1;
+			// bottomScrollV = 1;
+			updateScrollV();
 		}
 		else
 		{
@@ -1773,72 +1776,78 @@ class TextEngine
 		getBounds();
 	}
 
-	// Get & Set Methods
-	private function get_bottomScrollV():Int
+	private function updateScrollV():Void
 	{
-		// TODO: only update when dirty
 		if (numLines == 1 || lineHeights == null)
 		{
-			return 1;
-		}
-		else
-		{
-			var tempHeight = 0.0;
-			var ret = lineHeights.length;
-
-			for (i in ret - 1...lineHeights.length)
-			{
-				if (tempHeight + lineHeights[i] <= height - GUTTER * 2)
-				{
-					tempHeight += lineHeights[i];
-				}
-				else
-				{
-					ret = i;
-					break;
-				}
-			}
-
-			if (ret < 1) return 1;
-			return ret;
-		}
-	}
-
-	private function get_maxScrollV():Int
-	{
-		// TODO: only update when dirty
-		if (numLines == 1 || lineHeights == null)
-		{
-			return 1;
+			maxScrollV = 1;
 		}
 		else
 		{
 			var i = numLines - 1, tempHeight = 0.0;
-
-			if (text.charCodeAt(text.length - 1) == '\n'.code) i--; // trailing newlines do not contribute to maxScrollV
 			var j = i;
 
 			while (i >= 0)
 			{
-				if (tempHeight + lineHeights[i] <= height - GUTTER * 2)
+				if (tempHeight + lineHeights[i] <= Math.ceil(height - GUTTER * 2))
 				{
 					tempHeight += lineHeights[i];
 					i--;
 				}
 				else
+				{
 					break;
+				}
 			}
 
-			if (i == j) i = numLines; // maxScrollV defaults to numLines if the height - 4 is less than the line's height
-			// TODO: check if it's based on the first or last line's height
+			if (i == j)
+			{
+				i = numLines; // maxScrollV defaults to numLines if the height - 4 is less than the line's height
+				// TODO: check if it's based on the first or last line's height
+			}
 			else
+			{
 				i += 2;
+			}
 
-			if (i < 1) return 1;
-			return i;
+			if (i < 1)
+			{
+				maxScrollV = 1;
+			}
+			else
+			{
+				maxScrollV = i;
+			}
+		}
+
+		if (numLines == 1 || lineHeights == null)
+		{
+			bottomScrollV = 1;
+		}
+		else
+		{
+			var tempHeight = 0.0;
+			var ret = scrollV;
+
+			while (ret <= lineHeights.length)
+			{
+				if (tempHeight + lineHeights[ret - 1] <= Math.ceil(height - GUTTER))
+				{
+					tempHeight += lineHeights[ret - 1];
+				}
+				else
+				{
+					break;
+				}
+
+				ret++;
+			}
+
+			bottomScrollV = ret - 1;
 		}
 	}
 
+	// Get & Set Methods
 	private function set_restrict(value:String):String
 	{
 		if (restrict == value)
@@ -1872,7 +1881,10 @@ class TextEngine
 	private function set_scrollV(value:Int):Int
 	{
 		if (value < 1) value = 1;
-		return scrollV = value;
+		scrollV = value;
+		// TODO: Cheaper way to update bottomScrollV?
+		updateScrollV();
+		return value;
 	}
 
 	private function set_text(value:String):String

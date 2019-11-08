@@ -39,6 +39,7 @@ import lime.graphics.RenderContext;
 import lime.math.ARGB;
 import lime.math.Vector2;
 import openfl._internal.renderer.context3D.Context3DRenderer;
+import openfl._internal.renderer.context3D.batcher.BatchRenderer;
 #if lime_cairo
 import openfl._internal.renderer.cairo.CairoRenderer;
 #elseif (js && html5)
@@ -264,6 +265,11 @@ class BitmapData implements IBitmapDrawable
 
 		__textureWidth = width;
 		__textureHeight = height;
+
+		#if openfl_power_of_two
+		__textureWidth = __powerOfTwo(width);
+		__textureHeight = __powerOfTwo(height);
+		#end
 
 		if (width > 0 && height > 0)
 		{
@@ -938,14 +944,8 @@ class BitmapData implements IBitmapDrawable
 		_colorTransform.__copyFrom(source.__worldColorTransform);
 		_colorTransform.__invert();
 
-		if (!readable && __texture != null && __hardwareRenderer != null)
+		if (!readable && __hardwareRenderer != null && getTexture(__hardwareRenderer.context3D) != null)
 		{
-			if (__textureContext == null)
-			{
-				// TODO: Some way to select current GL context for renderer?
-				__textureContext = Application.current.window.context;
-			}
-
 			if (colorTransform != null)
 			{
 				_colorTransform.__combine(colorTransform);
@@ -957,8 +957,6 @@ class BitmapData implements IBitmapDrawable
 			__hardwareRenderer.__worldTransform = transform;
 			__hardwareRenderer.__worldAlpha = 1 / source.__worldAlpha;
 			__hardwareRenderer.__worldColorTransform = _colorTransform;
-
-			__hardwareRenderer.__resize(width, height);
 
 			__hardwareRenderer.__drawBitmapData(this, source, clipRect);
 		}
@@ -1224,19 +1222,15 @@ class BitmapData implements IBitmapDrawable
 
 	#if (!openfl_doc_gen || (!js && !html5 && !flash_doc_gen))
 	/**
-		Creates a new BitmapData instance from Base64-encoded data immediately.
+		Creates a new BitmapData instance from Base64-encoded data synchronously. This means
+		that the BitmapData will be returned immediately (if supported).
 
-		The returned BitmapData will have a width and height of zero initially, then it
-		will populate with image data once decoding is successful.
-
-		If you must know when the data will be decoded, use the `loadFromBase64` method
-		instead.
-
-		All platforms except for HTML5 will currently return `null`
+		HTML5 and Flash do not support creating BitmapData synchronously, so these targets
+		always return `null`. Other targets will return `null` if decoding was unsuccessful.
 
 		@param	base64	Base64-encoded data
 		@param	type	The MIME-type for the encoded data ("image/jpeg", etc)
-		@returns	A BitmapData when targeting HTML5 or `null` on all other targets
+		@returns	A new BitmapData if successful, or `null` if unsuccessful
 	**/
 	public static function fromBase64(base64:String, type:String):BitmapData
 	{
@@ -1619,6 +1613,149 @@ class BitmapData implements IBitmapDrawable
 		return __indexBuffer;
 	}
 
+	#if (lime && !disable_batcher)
+	@:dox(hide) public function pushQuadsToBatcher(batcher:BatchRenderer, transform:Matrix, alpha:Float, object:DisplayObject):Void
+	{
+		var blendMode = object.__worldBlendMode;
+		var colorTransform = object.__worldColorTransform;
+		var scale9Grid = object.__worldScale9Grid;
+
+		#if openfl_power_of_two
+		var uvWidth = width / __textureWidth;
+		var uvHeight = height / __textureHeight;
+		#else
+		var uvWidth = 1;
+		var uvHeight = 1;
+		#end
+
+		if (object != null && scale9Grid != null)
+		{
+			var vertexBufferWidth = object.width;
+			var vertexBufferHeight = object.height;
+			var vertexBufferScaleX = object.scaleX;
+			var vertexBufferScaleY = object.scaleY;
+
+			var centerX = scale9Grid.width;
+			var centerY = scale9Grid.height;
+			if (centerX != 0 && centerY != 0)
+			{
+				var left = scale9Grid.x;
+				var top = scale9Grid.y;
+				var right = vertexBufferWidth - centerX - left;
+				var bottom = vertexBufferHeight - centerY - top;
+
+				var uvLeft = left / vertexBufferWidth;
+				var uvTop = top / vertexBufferHeight;
+				var uvCenterX = scale9Grid.width / vertexBufferWidth;
+				var uvCenterY = scale9Grid.height / vertexBufferHeight;
+				var uvRight = right / width;
+				var uvBottom = bottom / height;
+				var uvOffsetU = 0.5 / vertexBufferWidth;
+				var uvOffsetV = 0.5 / vertexBufferHeight;
+
+				var renderedLeft = left / vertexBufferScaleX;
+				var renderedTop = top / vertexBufferScaleY;
+				var renderedRight = right / vertexBufferScaleX;
+				var renderedBottom = bottom / vertexBufferScaleY;
+				var renderedCenterX = (width - renderedLeft - renderedRight);
+				var renderedCenterY = (height - renderedTop - renderedBottom);
+
+				//  a         b          c         d
+				// p  0 ——— 1    4 ——— 5    8 ——— 9
+				//    |  /  |    |  /  |    |  /  |
+				//    2 ——— 3    6 ——— 7   10 ——— 11
+				// q
+				//   12 ——— 13  16 ——— 18  20 ——— 21
+				//    |  /  |    |  /  |    |  /  |
+				//   14 ——— 15  17 ——— 19  22 ——— 23
+				// r
+				//   24 ——— 25  28 ——— 29  32 ——— 33
+				//    |  /  |    |  /  |    |  /  |
+				//   26 ——— 27  30 ——— 31  34 ——— 35
+				// s
+
+				var a = 0;
+				var b = renderedLeft;
+				var c = renderedLeft + renderedCenterX;
+				var bc = renderedCenterX;
+				var d = width;
+				var cd = d - c;
+
+				var p = 0;
+				var q = renderedTop;
+				var r = renderedTop + renderedCenterY;
+				var qr = renderedCenterY;
+				var s = height;
+				var rs = s - r;
+
+				batcher.setVs(0, (uvHeight * uvTop) - uvOffsetV);
+				batcher.setVertices(transform, a, p, b, q);
+				batcher.setUs(0, (uvWidth * uvLeft) - uvOffsetU);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVertices(transform, b, p, bc, q);
+				batcher.setUs((uvWidth * uvLeft) + uvOffsetU, (uvWidth * (uvLeft + uvCenterX)) - uvOffsetU);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVertices(transform, c, p, cd, q);
+				batcher.setUs((uvWidth * (uvLeft + uvCenterX)) + uvOffsetU, uvWidth);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVs((uvHeight * uvTop) + uvOffsetV, (uvHeight * (uvTop + uvCenterY)) - uvOffsetV);
+				batcher.setVertices(transform, a, q, b, qr);
+				batcher.setUs(0, (uvWidth * uvLeft) - uvOffsetU);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVertices(transform, b, q, bc, qr);
+				batcher.setUs((uvWidth * uvLeft) + uvOffsetU, (uvWidth * (uvLeft + uvCenterX)) - uvOffsetU);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVertices(transform, c, q, cd, qr);
+				batcher.setUs((uvWidth * (uvLeft + uvCenterX)) + uvOffsetU, uvWidth);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVs((uvHeight * (uvTop + uvCenterY)) + uvOffsetV, uvHeight);
+				batcher.setVertices(transform, a, r, b, rs);
+				batcher.setUs(0, (uvWidth * uvLeft) - uvOffsetU);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVertices(transform, b, r, bc, rs);
+				batcher.setUs((uvWidth * uvLeft) + uvOffsetU, (uvWidth * (uvLeft + uvCenterX)) - uvOffsetU);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+
+				batcher.setVertices(transform, c, r, cd, rs);
+				batcher.setUs((uvWidth * (uvLeft + uvCenterX)) + uvOffsetU, uvWidth);
+				batcher.pushQuad(this, blendMode, alpha, colorTransform);
+			}
+			else if (centerX == 0 && centerY != 0)
+			{
+				// TODO
+				// 3 ——— 2
+				// |  /  |
+				// 1 ——— 0
+				// |  /  |
+				// 5 ——— 4
+				// |  /  |
+				// 7 ——— 6
+			}
+			else if (centerY == 0 && centerX != 0)
+			{
+				// TODO
+				// 3 ——— 2 ——— 5 ——— 7
+				// |  /  |  /  |  /  |
+				// 1 ——— 0 ——— 4 ——— 6
+			}
+		}
+		else
+		{
+			batcher.setVertices(transform, 0, 0, width, height);
+			batcher.setUs(0, uvWidth);
+			batcher.setVs(0, uvHeight);
+			batcher.pushQuad(this, blendMode, alpha, colorTransform);
+		}
+	}
+	#end
+
 	/**
 		**BETA**
 
@@ -1644,33 +1781,10 @@ class BitmapData implements IBitmapDrawable
 					|| __vertexBufferScaleX != targetObject.scaleX
 					|| __vertexBufferScaleY != targetObject.scaleY)))
 		{
-			#if openfl_power_of_two
-			var newWidth = 1;
-			var newHeight = 1;
+			__uvRect = new Rectangle(0, 0, __textureWidth, __textureHeight);
 
-			while (newWidth < width)
-			{
-				newWidth <<= 1;
-			}
-
-			while (newHeight < height)
-			{
-				newHeight <<= 1;
-			}
-
-			__uvRect = new Rectangle(0, 0, newWidth, newHeight);
-
-			var uvWidth = width / newWidth;
-			var uvHeight = height / newHeight;
-
-			__textureWidth = newWidth;
-			__textureHeight = newHeight;
-			#else
-			__uvRect = new Rectangle(0, 0, width, height);
-
-			var uvWidth = 1;
-			var uvHeight = 1;
-			#end
+			var uvWidth = width / __textureWidth;
+			var uvHeight = height / __textureHeight;
 
 			// __vertexBufferData = new Float32Array ([
 			//
@@ -1688,6 +1802,14 @@ class BitmapData implements IBitmapDrawable
 			#if lime
 			__vertexBufferContext = context.__context;
 			__vertexBuffer = null;
+
+			if (targetObject != null)
+			{
+				__vertexBufferWidth = targetObject.width;
+				__vertexBufferHeight = targetObject.height;
+				__vertexBufferScaleX = targetObject.scaleX;
+				__vertexBufferScaleY = targetObject.scaleY;
+			}
 
 			if (scale9Grid != null && targetObject != null)
 			{
@@ -2171,10 +2293,17 @@ class BitmapData implements IBitmapDrawable
 	{
 		if (!__isValid) return null;
 
+		if (!readable && image == null && (__texture == null || __textureContext != context.__context))
+		{
+			__textureContext = null;
+			__texture = null;
+			return null;
+		}
+
 		if (__texture == null || __textureContext != context.__context)
 		{
 			__textureContext = context.__context;
-			__texture = context.createRectangleTexture(width, height, BGRA, false);
+			__texture = context.createRectangleTexture(__textureWidth, __textureHeight, BGRA, false);
 
 			// context.__bindGLTexture2D (__texture);
 			// gl.texParameteri (gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -3079,6 +3208,11 @@ class BitmapData implements IBitmapDrawable
 			__textureWidth = width;
 			__textureHeight = height;
 
+			#if openfl_power_of_two
+			__textureWidth = __powerOfTwo(width);
+			__textureHeight = __powerOfTwo(height);
+			#end
+
 			#if sys
 			image.format = BGRA32;
 			image.premultiplied = true;
@@ -3234,6 +3368,11 @@ class BitmapData implements IBitmapDrawable
 
 		__textureWidth = width;
 		__textureHeight = height;
+
+		#if openfl_power_of_two
+		__textureWidth = __powerOfTwo(width);
+		__textureHeight = __powerOfTwo(height);
+		#end
 	}
 
 	@:noCompletion private function __setUVRect(context:Context3D, x:Float, y:Float, width:Float, height:Float):Void
@@ -3326,6 +3465,16 @@ class BitmapData implements IBitmapDrawable
 		}
 
 		__renderTransform.copyFrom(__worldTransform);
+	}
+
+	@:noCompletion private inline function __powerOfTwo(value:Int):Int
+	{
+		var newValue = 1;
+		while (newValue < value)
+		{
+			newValue <<= 1;
+		}
+		return newValue;
 	}
 }
 #else

@@ -242,19 +242,21 @@ import lime.math.Vector2;
 		Context3D.
 
 		API totalGPUMemory returns the total memory consumed by the above resources to
-		the user. Default value returned is 0.The total GPU memory returned is in bytes.
+		the user. Default value returned is 0. The total GPU memory returned is in bytes.
 		The information is only provided in Direct mode on mobile, and in Direct and
 		GPU modes on desktop. (On desktop, using `<renderMode>gpu</renderMode>` will
 		fall back to `<renderMode>direct</renderMode>`)
 
 		This API can be used when the SWF version is 32 or later.
 	**/
-	public var totalGPUMemory(default, null):Int = 0;
+	public var totalGPUMemory(get, never):Int;
 
 	@:noCompletion private static var __driverInfo:String;
 	@:noCompletion private static var __glDepthStencil:Int = -1;
 	@:noCompletion private static var __glMaxTextureMaxAnisotropy:Int = -1;
 	@:noCompletion private static var __glMaxViewportDims:Int = -1;
+	@:noCompletion private static var __glMemoryCurrentAvailable:Int = -1;
+	@:noCompletion private static var __glMemoryTotalAvailable:Int = -1;
 	@:noCompletion private static var __glTextureMaxAnisotropy:Int = -1;
 
 	@:noCompletion private var gl:#if lime WebGLRenderContext #else Dynamic #end;
@@ -368,6 +370,16 @@ import lime.math.Vector2;
 				}
 			}
 			#end
+		}
+
+		if (__glMemoryTotalAvailable == -1)
+		{
+			var extension = gl.getExtension("NVX_gpu_memory_info");
+			if (extension != null)
+			{
+				__glMemoryTotalAvailable = extension.GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX;
+				__glMemoryCurrentAvailable = extension.GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX;
+			}
 		}
 		#end
 
@@ -2358,7 +2370,10 @@ import lime.math.Vector2;
 				else
 				{
 					__bindGLTexture2D(null);
-					gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
+					if (__state.program.__agalAlphaSamplerEnabled[sampler] != null)
+					{
+						gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
+					}
 				}
 			}
 
@@ -2640,6 +2655,22 @@ import lime.math.Vector2;
 	@:noCompletion private function set_enableErrorChecking(value:Bool):Bool
 	{
 		return __enableErrorChecking = value;
+	}
+
+	@:noCompletion private function get_totalGPUMemory():Int
+	{
+		if (__glMemoryCurrentAvailable != -1)
+		{
+			// TODO: Return amount used by this application only
+			var current = gl.getParameter(__glMemoryCurrentAvailable);
+			var total = gl.getParameter(__glMemoryTotalAvailable);
+
+			if (total > 0)
+			{
+				return (total - current) * 1024;
+			}
+		}
+		return 0;
 	}
 }
 #else

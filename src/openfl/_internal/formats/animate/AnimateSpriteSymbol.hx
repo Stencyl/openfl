@@ -26,10 +26,11 @@ class AnimateSpriteSymbol extends AnimateSymbol
 
 	private function __constructor(movieClip:MovieClip):Void
 	{
+		var timeline = new AnimateTimeline(library, this);
 		#if flash
-		@:privateAccess cast(movieClip, flash.display.MovieClip.MovieClip2).__timeline = new AnimateTimeline(movieClip, library, this);
+		@:privateAccess cast(movieClip, flash.display.MovieClip.MovieClip2).attachTimeline(timeline);
 		#else
-		movieClip.__timeline = new AnimateTimeline(movieClip, library, this);
+		movieClip.attachTimeline(timeline);
 		#end
 		movieClip.scale9Grid = scale9Grid;
 	}

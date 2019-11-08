@@ -22,6 +22,7 @@ import openfl._internal.renderer.context3D.stats.DrawCallContext;
 @:noDebug
 #end
 @:access(openfl.display3D.Context3D)
+@:access(openfl.display.BitmapData)
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.Graphics)
 @:access(openfl.display.Shader)
@@ -266,6 +267,9 @@ class Context3DGraphics
 					var vertexBufferData = hasUVTData ? graphics.__vertexBufferDataUVT : graphics.__vertexBufferData;
 					var offset, vertOffset, uvOffset, t;
 
+					var uScale = bitmap.width / bitmap.__textureWidth;
+					var vScale = bitmap.height / bitmap.__textureHeight;
+
 					for (i in 0...length)
 					{
 						offset = vertexOffset + (i * dataPerVertex);
@@ -289,8 +293,13 @@ class Context3DGraphics
 							vertexBufferData[offset + 1] = vertices[vertOffset + 1];
 						}
 
+						#if openfl_power_of_two
+						vertexBufferData[offset + vertLength] = hasUVData ? uvtData[uvOffset] * uScale : 0;
+						vertexBufferData[offset + vertLength + 1] = hasUVData ? uvtData[uvOffset + 1] * vScale : 0;
+						#else
 						vertexBufferData[offset + vertLength] = hasUVData ? uvtData[uvOffset] : 0;
 						vertexBufferData[offset + vertLength + 1] = hasUVData ? uvtData[uvOffset + 1] : 0;
+						#end
 					}
 
 					// if (hasIndices) triangleIndexBufferPosition += length;
@@ -461,7 +470,7 @@ class Context3DGraphics
 	{
 		if (!graphics.__visible || graphics.__commands.length == 0) return;
 
-		if ((graphics.__bitmap != null && !graphics.__dirty) || !isCompatible(graphics))
+		if ((graphics.__bitmap != null && !graphics.__dirty) #if !hwgraphics || !isCompatible(graphics) #end)
 		{
 			// if (graphics.__quadBuffer != null || graphics.__triangleIndexBuffer != null) {
 
@@ -490,6 +499,16 @@ class Context3DGraphics
 		}
 		else
 		{
+			#if hwgraphics
+			if (!isCompatible(graphics))
+			{
+				openfl._internal.renderer.opengl.utils.GraphicsRenderer.render(graphics, renderer);
+				graphics.__hardwareDirty = false;
+				graphics.__dirty = false;
+				return;
+			}
+			#end
+
 			graphics.__bitmap = null;
 			graphics.__update(renderer.__worldTransform);
 
@@ -527,6 +546,13 @@ class Context3DGraphics
 				var triangleIndexBufferPosition = 0;
 				var vertexBufferPosition = 0;
 				var vertexBufferPositionUVT = 0;
+
+				#if !disable_batcher
+				if (graphics.__commands.length > 0)
+				{
+					renderer.batcher.flush();
+				}
+				#end
 
 				for (type in graphics.__commands.types)
 				{
@@ -592,7 +618,7 @@ class Context3DGraphics
 									renderer.__setShaderBuffer(shaderBuffer);
 									renderer.applyMatrix(uMatrix);
 									renderer.applyBitmapData(bitmap, false /* ignored */, repeat);
-									renderer.applyAlpha(graphics.__owner.__worldAlpha);
+									renderer.applyAlpha(renderer.__getAlpha(graphics.__owner.__worldAlpha));
 									renderer.applyColorTransform(graphics.__owner.__worldColorTransform);
 									// renderer.__updateShaderBuffer ();
 								}
@@ -602,7 +628,7 @@ class Context3DGraphics
 									renderer.setShader(shader);
 									renderer.applyMatrix(uMatrix);
 									renderer.applyBitmapData(bitmap, smooth, repeat);
-									renderer.applyAlpha(graphics.__owner.__worldAlpha);
+									renderer.applyAlpha(renderer.__getAlpha(graphics.__owner.__worldAlpha));
 									renderer.applyColorTransform(graphics.__owner.__worldColorTransform);
 									renderer.updateShader();
 								}
@@ -625,14 +651,13 @@ class Context3DGraphics
 										graphics.__quadBuffer.vertexBuffer, (quadBufferPosition * 16) + 2, FLOAT_2);
 
 									context.drawTriangles(context.__quadIndexBuffer, 0, length * 2);
+									#if gl_stats
+									Context3DStats.incrementDrawCall(DrawCallContext.STAGE);
+									#end
 
 									shaderBufferOffset += length * 4;
 									quadBufferPosition += length;
 								}
-
-								#if gl_stats
-								Context3DStats.incrementDrawCall(DrawCallContext.STAGE);
-								#end
 
 								renderer.__clearShader();
 							}
@@ -665,7 +690,7 @@ class Context3DGraphics
 								renderer.applyMatrix(renderer.__getMatrix(matrix, AUTO));
 								renderer.applyBitmapData(blankBitmapData, true, repeat);
 								#if lime
-								renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
+								renderer.applyAlpha(renderer.__getAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha));
 								#end
 								renderer.applyColorTransform(tempColorTransform);
 								renderer.updateShader();
@@ -715,7 +740,7 @@ class Context3DGraphics
 								renderer.__setShaderBuffer(shaderBuffer);
 								renderer.applyMatrix(uMatrix);
 								renderer.applyBitmapData(bitmap, false, repeat);
-								renderer.applyAlpha(1);
+								renderer.applyAlpha(renderer.__getAlpha(1));
 								renderer.applyColorTransform(null);
 								renderer.__updateShaderBuffer(shaderBufferOffset);
 							}
@@ -725,7 +750,7 @@ class Context3DGraphics
 								renderer.setShader(shader);
 								renderer.applyMatrix(uMatrix);
 								renderer.applyBitmapData(bitmap, smooth, repeat);
-								renderer.applyAlpha(graphics.__owner.__worldAlpha);
+								renderer.applyAlpha(renderer.__getAlpha(graphics.__owner.__worldAlpha));
 								renderer.applyColorTransform(graphics.__owner.__worldColorTransform);
 								renderer.updateShader();
 							}
