@@ -556,7 +556,7 @@ class CairoRenderer extends CairoRendererAPI
 				|| (object.__renderDirty && (force || (object.__children != null && object.__children.length > 0)))
 				|| object.opaqueBackground != object.__cacheBitmapBackground)
 				|| (object.__graphics != null && object.__graphics.__softwareDirty)
-				|| !object.__cacheBitmapColorTransform.__equals(colorTransform, true);
+				|| (object.__cacheBitmapColorTransform != null && !object.__cacheBitmapColorTransform.__equals(colorTransform, true));
 
 			if (!needRender
 				&& (bitmapMatrix.a != object.__cacheBitmapMatrix.a
