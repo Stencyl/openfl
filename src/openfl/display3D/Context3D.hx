@@ -1,15 +1,11 @@
 package openfl.display3D;
 
 #if !flash
-import openfl._internal.backend.gl.GLBuffer;
-import openfl._internal.backend.gl.GLFramebuffer;
-import openfl._internal.backend.gl.GLTexture;
-import openfl._internal.renderer.context3D.Context3DState;
-import openfl._internal.renderer.BitmapDataPool;
-import openfl._internal.renderer.SamplerState;
-import openfl._internal.utils.Float32Array;
-import openfl._internal.utils.UInt16Array;
-import openfl._internal.utils.UInt8Array;
+import openfl.display3D._internal.Context3DState;
+import openfl.display3D._internal.GLBuffer;
+import openfl.display3D._internal.GLFramebuffer;
+import openfl.display3D._internal.GLTexture;
+import openfl.display._internal.SamplerState;
 import openfl.display3D.textures.CubeTexture;
 import openfl.display3D.textures.RectangleTexture;
 import openfl.display3D.textures.TextureBase;
@@ -24,6 +20,9 @@ import openfl.events.EventDispatcher;
 import openfl.geom.Matrix3D;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
+import openfl.utils._internal.Float32Array;
+import openfl.utils._internal.UInt16Array;
+import openfl.utils._internal.UInt8Array;
 import openfl.utils.AGALMiniAssembler;
 import openfl.utils.ByteArray;
 #if lime
@@ -128,7 +127,7 @@ import lime.math.Vector2;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl._internal.renderer.context3D.Context3DState)
+@:access(openfl.display3D._internal.Context3DState)
 @:access(openfl.display3D.textures.CubeTexture)
 @:access(openfl.display3D.textures.RectangleTexture)
 @:access(openfl.display3D.textures.TextureBase)
@@ -264,7 +263,6 @@ import lime.math.Vector2;
 	@:noCompletion private var __backBufferTexture:RectangleTexture;
 	@:noCompletion private var __backBufferWantsBestResolution:Bool;
 	@:noCompletion private var __backBufferWantsBestResolutionOnBrowserZoom:Bool;
-	@:noCompletion private var __bitmapDataPool:BitmapDataPool;
 	@:noCompletion private var __cleared:Bool;
 	@:noCompletion private var __context:#if lime RenderContext #else Dynamic #end;
 	@:noCompletion private var __contextState:Context3DState;
@@ -322,9 +320,9 @@ import lime.math.Vector2;
 
 			#if (js && html5)
 			if (extension == null
-				|| extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT == null) extension = gl.getExtension("MOZ_EXT_texture_filter_anisotropic");
+				|| !Reflect.hasField(extension, "MAX_TEXTURE_MAX_ANISOTROPY_EXT")) extension = gl.getExtension("MOZ_EXT_texture_filter_anisotropic");
 			if (extension == null
-				|| extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT == null) extension = gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic");
+				|| !Reflect.hasField(extension, "MAX_TEXTURE_MAX_ANISOTROPY_EXT")) extension = gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic");
 			#end
 
 			if (extension != null)
@@ -420,8 +418,6 @@ import lime.math.Vector2;
 		__quadIndexBuffer = createIndexBuffer(__quadIndexBufferCount);
 		__quadIndexBuffer.uploadFromTypedArray(data);
 		#end
-
-		__bitmapDataPool = new BitmapDataPool(30, this);
 	}
 
 	/**
@@ -2403,19 +2399,19 @@ import lime.math.Vector2;
 			var width = 0, height = 0;
 
 			// TODO: Avoid use of Std.is
-			if (Std.is(__state.renderToTexture, Texture))
+			if ((__state.renderToTexture is Texture))
 			{
 				var texture2D:Texture = cast __state.renderToTexture;
 				width = texture2D.__width;
 				height = texture2D.__height;
 			}
-			else if (Std.is(__state.renderToTexture, RectangleTexture))
+			else if ((__state.renderToTexture is RectangleTexture))
 			{
 				var rectTexture:RectangleTexture = cast __state.renderToTexture;
 				width = rectTexture.__width;
 				height = rectTexture.__height;
 			}
-			else if (Std.is(__state.renderToTexture, CubeTexture))
+			else if ((__state.renderToTexture is CubeTexture))
 			{
 				var cubeTexture:CubeTexture = cast __state.renderToTexture;
 				width = cubeTexture.__size;

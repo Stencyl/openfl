@@ -18,8 +18,6 @@ import lime.utils.ArrayBuffer;
 import lime.utils.BytePointer;
 import lime.utils.Bytes as LimeBytes;
 import lime.utils.DataPointer;
-#elseif js
-import js.html.ArrayBuffer;
 #end
 #if format
 import format.amf.Reader as AMFReader;
@@ -279,7 +277,7 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		this.deflate();
 	}
 
-	#if (lime || js)
+	#if lime
 	/**
 		Converts an ArrayBuffer into a ByteArray.
 
@@ -315,7 +313,7 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		#if display
 		return null;
 		#else
-		if (Std.is(bytes, ByteArrayData))
+		if ((bytes is ByteArrayData))
 		{
 			return cast bytes;
 		}
@@ -343,7 +341,7 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		#if display
 		return null;
 		#elseif flash
-		return cast bytesData;
+		return bytesData;
 		#else
 		return ByteArrayData.fromBytes(Bytes.ofData(bytesData));
 		#end
@@ -739,7 +737,7 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		#if display
 		return null;
 		#elseif flash
-		return cast byteArray;
+		return byteArray;
 		#else
 		return (byteArray : ByteArrayData).getData();
 		#end
@@ -1086,15 +1084,15 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		});
 		untyped global.Object.defineProperties(ByteArrayData.prototype, {
 			"bytesAvailable": {
-				get: untyped __js__("function () { return this.get_bytesAvailable (); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bytesAvailable (); }")
 			},
 			"endian": {
-				get: untyped __js__("function () { return this.get_endian (); }"),
-				set: untyped __js__("function (v) { return this.set_endian (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_endian (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_endian (v); }")
 			},
 			"length": {
-				get: untyped __js__("function () { return this.get_length (); }"),
-				set: untyped __js__("function (v) { return this.set_length (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_length (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_length (v); }")
 			},
 		});
 	}

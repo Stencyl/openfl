@@ -80,18 +80,18 @@ class Bitmap extends DisplayObject
 	**/
 	public var smoothing:Bool;
 
-	@:noCompletion private var __bitmapData:BitmapData;
 	#if (js && html5)
 	@:noCompletion private var __image:ImageElement;
 	#end
+	@:noCompletion private var __bitmapData:BitmapData;
 	@:noCompletion private var __imageVersion:Int;
 
 	#if openfljs
 	@:noCompletion private static function __init__()
 	{
 		untyped Object.defineProperty(Bitmap.prototype, "bitmapData", {
-			get: untyped __js__("function () { return this.get_bitmapData (); }"),
-			set: untyped __js__("function (v) { return this.set_bitmapData (v); }")
+			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bitmapData (); }"),
+			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_bitmapData (v); }")
 		});
 	}
 	#end
@@ -110,8 +110,7 @@ class Bitmap extends DisplayObject
 	{
 		super();
 
-		__type = BITMAP;
-
+		__drawableType = BITMAP;
 		__bitmapData = bitmapData;
 		this.pixelSnapping = pixelSnapping;
 		this.smoothing = smoothing;
@@ -220,7 +219,7 @@ class Bitmap extends DisplayObject
 	{
 		if (__bitmapData != null)
 		{
-			scaleY = value / __bitmapData.height; //get_height();
+			scaleY = value / __bitmapData.height; // get_height();
 		}
 		else
 		{
@@ -233,7 +232,7 @@ class Bitmap extends DisplayObject
 	{
 		if (__bitmapData != null)
 		{
-			scaleX = value / __bitmapData.width;// get_width();
+			scaleX = value / __bitmapData.width; // get_width();
 		}
 		else
 		{

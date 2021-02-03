@@ -2,15 +2,12 @@ package openfl.text;
 
 #if !flash
 import haxe.Timer;
-import openfl._internal.formats.swf.SWFLite;
-import openfl._internal.symbols.DynamicTextSymbol;
-import openfl._internal.symbols.FontSymbol;
-import openfl._internal.formats.html.HTMLParser;
-import openfl._internal.text.TextEngine;
-import openfl._internal.text.TextFormatRange;
-import openfl._internal.text.TextLayoutGroup;
-import openfl._internal.text.UTF8String;
-import openfl._internal.utils.Log;
+import openfl.text._internal.HTMLParser;
+import openfl.text._internal.TextEngine;
+import openfl.text._internal.TextFormatRange;
+import openfl.text._internal.TextLayoutGroup;
+import openfl.text._internal.UTF8String;
+import openfl.utils._internal.Log;
 import openfl.display.DisplayObject;
 import openfl.display.Graphics;
 import openfl.display.InteractiveObject;
@@ -122,7 +119,7 @@ import js.html.DivElement;
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
-@:access(openfl._internal.text.TextEngine)
+@:access(openfl.text._internal.TextEngine)
 @:access(openfl.text.TextFormat)
 class TextField extends InteractiveObject
 {
@@ -684,7 +681,6 @@ class TextField extends InteractiveObject
 	@:noCompletion private var __offsetY:Float;
 	@:noCompletion private var __selectionIndex:Int;
 	@:noCompletion private var __showCursor:Bool;
-	@:noCompletion private var __symbol:DynamicTextSymbol;
 	@:noCompletion private var __text:UTF8String;
 	@:noCompletion private var __htmlText:UTF8String;
 	@:noCompletion private var __textEngine:TextEngine;
@@ -701,96 +697,105 @@ class TextField extends InteractiveObject
 	{
 		untyped Object.defineProperties(TextField.prototype, {
 			"antiAliasType": {
-				get: untyped __js__("function () { return this.get_antiAliasType (); }"),
-				set: untyped __js__("function (v) { return this.set_antiAliasType (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_antiAliasType (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_antiAliasType (v); }")
 			},
 			"autoSize": {
-				get: untyped __js__("function () { return this.get_autoSize (); }"),
-				set: untyped __js__("function (v) { return this.set_autoSize (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_autoSize (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_autoSize (v); }")
 			},
 			"background": {
-				get: untyped __js__("function () { return this.get_background (); }"),
-				set: untyped __js__("function (v) { return this.set_background (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_background (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_background (v); }")
 			},
 			"backgroundColor": {
-				get: untyped __js__("function () { return this.get_backgroundColor (); }"),
-				set: untyped __js__("function (v) { return this.set_backgroundColor (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_backgroundColor (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_backgroundColor (v); }")
 			},
-			"border": {get: untyped __js__("function () { return this.get_border (); }"), set: untyped __js__("function (v) { return this.set_border (v); }")},
+			"border": {
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_border (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_border (v); }")
+			},
 			"borderColor": {
-				get: untyped __js__("function () { return this.get_borderColor (); }"),
-				set: untyped __js__("function (v) { return this.set_borderColor (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_borderColor (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_borderColor (v); }")
 			},
-			"bottomScrollV": {get: untyped __js__("function () { return this.get_bottomScrollV (); }")},
+			"bottomScrollV": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bottomScrollV (); }")},
 			"defaultTextFormat": {
-				get: untyped __js__("function () { return this.get_defaultTextFormat (); }"),
-				set: untyped __js__("function (v) { return this.set_defaultTextFormat (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_defaultTextFormat (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_defaultTextFormat (v); }")
 			},
 			"displayAsPassword": {
-				get: untyped __js__("function () { return this.get_displayAsPassword (); }"),
-				set: untyped __js__("function (v) { return this.set_displayAsPassword (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_displayAsPassword (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_displayAsPassword (v); }")
 			},
 			"embedFonts": {
-				get: untyped __js__("function () { return this.get_embedFonts (); }"),
-				set: untyped __js__("function (v) { return this.set_embedFonts (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_embedFonts (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_embedFonts (v); }")
 			},
 			"gridFitType": {
-				get: untyped __js__("function () { return this.get_gridFitType (); }"),
-				set: untyped __js__("function (v) { return this.set_gridFitType (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_gridFitType (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_gridFitType (v); }")
 			},
 			"htmlText": {
-				get: untyped __js__("function () { return this.get_htmlText (); }"),
-				set: untyped __js__("function (v) { return this.set_htmlText (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_htmlText (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_htmlText (v); }")
 			},
-			"length": {get: untyped __js__("function () { return this.get_length (); }")},
+			"length": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_length (); }")},
 			"maxChars": {
-				get: untyped __js__("function () { return this.get_maxChars (); }"),
-				set: untyped __js__("function (v) { return this.set_maxChars (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_maxChars (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_maxChars (v); }")
 			},
-			"maxScrollH": {get: untyped __js__("function () { return this.get_maxScrollH (); }")},
-			"maxScrollV": {get: untyped __js__("function () { return this.get_maxScrollV (); }")},
+			"maxScrollH": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_maxScrollH (); }")},
+			"maxScrollV": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_maxScrollV (); }")},
 			"mouseWheelEnabled": {
-				get: untyped __js__("function () { return this.get_mouseWheelEnabled (); }"),
-				set: untyped __js__("function (v) { return this.set_mouseWheelEnabled (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_mouseWheelEnabled (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_mouseWheelEnabled (v); }")
 			},
 			"multiline": {
-				get: untyped __js__("function () { return this.get_multiline (); }"),
-				set: untyped __js__("function (v) { return this.set_multiline (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_multiline (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_multiline (v); }")
 			},
-			"numLines": {get: untyped __js__("function () { return this.get_numLines (); }")},
+			"numLines": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_numLines (); }")},
 			"restrict": {
-				get: untyped __js__("function () { return this.get_restrict (); }"),
-				set: untyped __js__("function (v) { return this.set_restrict (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_restrict (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_restrict (v); }")
 			},
 			"scrollH": {
-				get: untyped __js__("function () { return this.get_scrollH (); }"),
-				set: untyped __js__("function (v) { return this.set_scrollH (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scrollH (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scrollH (v); }")
 			},
 			"scrollV": {
-				get: untyped __js__("function () { return this.get_scrollV (); }"),
-				set: untyped __js__("function (v) { return this.set_scrollV (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scrollV (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scrollV (v); }")
 			},
 			"selectable": {
-				get: untyped __js__("function () { return this.get_selectable (); }"),
-				set: untyped __js__("function (v) { return this.set_selectable (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectable (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_selectable (v); }")
 			},
-			"selectionBeginIndex": {get: untyped __js__("function () { return this.get_selectionBeginIndex (); }")},
-			"selectionEndIndex": {get: untyped __js__("function () { return this.get_selectionEndIndex (); }")},
+			"selectionBeginIndex": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionBeginIndex (); }")},
+			"selectionEndIndex": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionEndIndex (); }")},
 			"sharpness": {
-				get: untyped __js__("function () { return this.get_sharpness (); }"),
-				set: untyped __js__("function (v) { return this.set_sharpness (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_sharpness (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_sharpness (v); }")
 			},
-			"text": {get: untyped __js__("function () { return this.get_text (); }"), set: untyped __js__("function (v) { return this.set_text (v); }")},
+			"text": {
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_text (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_text (v); }")
+			},
 			"textColor": {
-				get: untyped __js__("function () { return this.get_textColor (); }"),
-				set: untyped __js__("function (v) { return this.set_textColor (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textColor (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_textColor (v); }")
 			},
-			"textHeight": {get: untyped __js__("function () { return this.get_textHeight (); }")},
-			"textWidth": {get: untyped __js__("function () { return this.get_textWidth (); }")},
-			"type": {get: untyped __js__("function () { return this.get_type (); }"), set: untyped __js__("function (v) { return this.set_type (v); }")},
+			"textHeight": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textHeight (); }")},
+			"textWidth": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textWidth (); }")},
+			"type": {
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_type (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_type (v); }")
+			},
 			"wordWrap": {
-				get: untyped __js__("function () { return this.get_wordWrap (); }"),
-				set: untyped __js__("function (v) { return this.set_wordWrap (v); }")
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_wordWrap (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_wordWrap (v); }")
 			},
 		});
 	}
@@ -808,8 +813,7 @@ class TextField extends InteractiveObject
 	{
 		super();
 
-		__type = TEXTFIELD;
-
+		__drawableType = TEXT_FIELD;
 		__caretIndex = -1;
 		__displayAsPassword = false;
 		__graphics = new Graphics(this);
@@ -819,6 +823,8 @@ class TextField extends InteractiveObject
 		__offsetY = 0;
 		__mouseWheelEnabled = true;
 		__text = "";
+
+		doubleClickEnabled = true;
 
 		if (__defaultTextFormat == null)
 		{
@@ -837,6 +843,8 @@ class TextField extends InteractiveObject
 		addEventListener(FocusEvent.FOCUS_OUT, this_onFocusOut);
 		addEventListener(KeyboardEvent.KEY_DOWN, this_onKeyDown);
 		addEventListener(MouseEvent.MOUSE_WHEEL, this_onMouseWheel);
+
+		addEventListener(MouseEvent.DOUBLE_CLICK, this_onDoubleClick);
 	}
 
 	/**
@@ -860,8 +868,7 @@ class TextField extends InteractiveObject
 
 		__textEngine.textFormatRanges[__textEngine.textFormatRanges.length - 1].end = __text.length;
 
-		__updateScrollV();
-		__updateScrollH();
+		setSelection(__text.length, __text.length);
 	}
 
 	// function copyRichText() : String;
@@ -1368,9 +1375,12 @@ class TextField extends InteractiveObject
 		__caretIndex = endIndex;
 
 		__updateScrollV();
-
-		__stopCursorTimer();
-		__startCursorTimer();
+		__updateScrollH();
+		if (stage != null && stage.focus == this)
+		{
+			__stopCursorTimer();
+			__startCursorTimer();
+		}
 	}
 
 	/**
@@ -1418,38 +1428,49 @@ class TextField extends InteractiveObject
 		@throws RangeError The `beginIndex` or `endIndex`
 						   specified is out of range.
 	**/
-	public function setTextFormat(format:TextFormat, beginIndex:Int = 0, endIndex:Int = 0):Void
+	public function setTextFormat(format:TextFormat, beginIndex:Int = -1, endIndex:Int = -1):Void
 	{
 		var max = text.length;
 		var range;
 
-		if (beginIndex < 0) beginIndex = 0;
-		if (endIndex < 0) endIndex = 0;
-
-		if (endIndex == 0)
+		if (beginIndex == -1)
 		{
-			if (beginIndex == 0)
-			{
-				endIndex = max;
-			}
-			else
-			{
-				endIndex = beginIndex + 1;
-			}
+			if (endIndex == -1) endIndex = max;
+			beginIndex = 0;
+		}
+		else if (endIndex == -1)
+		{
+			endIndex = beginIndex + 1;
 		}
 
-		if (endIndex < beginIndex) return;
+		if (beginIndex == endIndex) return;
+		if (beginIndex < 0 || endIndex <= 0 || endIndex < beginIndex || beginIndex >= max || endIndex > max) throw new RangeError();
 
-		if (beginIndex == 0 && endIndex >= max)
+		// there are 11 cases that have to be handled
+		// the order and logic of cases really matters!!
+		//	beginIndex == 0 && endIndex == max -> replace all format ranges with new one
+		//	existing range.end < beginIndex -> continue
+		//	existing range.start >= endIndex -> done
+		//	existing range encompassed by beginIndex...endIndex ->
+		//		existing range == new range -> merge new format into existing
+		//		range.start == beginIndex -> existing.start = endIndex, insert new before existing
+		//		range.end == endIndex -> existing.end = beginIndex, insert new after existing
+		//		else -> split existing into two (existing.end = beginIndex; newExisting.start = endIndex), insert new in between
+		//	existing range completely encompasses beginIndex...endIndex
+		// 		if they start with the same index -> overwrite
+		// 		else -> delete existing
+		//	existing range encompasses beginIndex but not endIndex -> existing.start = endIndex
+		//	existing range encompasses endIndex but not beginIndex -> existing.end = beginIndex, insert new
+
+		if (beginIndex == 0 && endIndex == max)
 		{
 			// set text format for the whole textfield
-			__textFormat.__merge(format);
+			__textEngine.textFormatRanges.length = 1;
 
-			for (i in 0...__textEngine.textFormatRanges.length)
-			{
-				range = __textEngine.textFormatRanges[i];
-				range.format.__merge(format);
-			}
+			range = __textEngine.textFormatRanges[0];
+			range.start = 0;
+			range.end = max;
+			range.format.__merge(format);
 		}
 		else
 		{
@@ -1460,39 +1481,118 @@ class TextField extends InteractiveObject
 			{
 				range = __textEngine.textFormatRanges[index];
 
-				if (range.start == beginIndex && range.end == endIndex)
+				if (range.end <= beginIndex)
 				{
-					// set format range matches an existing range exactly
-					range.format.__merge(format);
+					// skip until relevant format ranges
+					index++;
+				}
+				else if (range.start >= endIndex)
+				{
+					// stop iterating if set format range has been handled
 					break;
+				}
+				else if (range.start <= beginIndex && range.end >= endIndex)
+				{
+					if (range.start == beginIndex && range.end == endIndex)
+					{
+						// set format range matches an existing range exactly
+						range.format = range.format.clone();
+						range.format.__merge(format);
+						break;
+					}
+					else if (range.start == beginIndex)
+					{
+						// existing range encompasses set format range, with start == beginIndex
+						newRange = new TextFormatRange(range.format.clone(), beginIndex, endIndex);
+						newRange.format.__merge(format);
+						__textEngine.textFormatRanges.insertAt(index, newRange);
+						range.start = endIndex;
+						index += 2;
+					}
+					else if (range.end == endIndex)
+					{
+						// existing range encompasses set format range, with end == endIndex
+						newRange = new TextFormatRange(range.format.clone(), beginIndex, endIndex);
+						newRange.format.__merge(format);
+						__textEngine.textFormatRanges.insertAt(index + 1, newRange);
+
+						range.end = beginIndex;
+						break;
+					}
+					else
+					{
+						// existing range completely encompasses set format range
+						newRange = new TextFormatRange(range.format.clone(), beginIndex, endIndex);
+						newRange.format.__merge(format);
+						__textEngine.textFormatRanges.insertAt(index + 1, newRange);
+
+						newRange = new TextFormatRange(range.format.clone(), endIndex, range.end);
+						__textEngine.textFormatRanges.insertAt(index + 2, newRange);
+
+						range.end = beginIndex;
+						break;
+					}
 				}
 				else if (range.start >= beginIndex && range.end <= endIndex)
 				{
 					// set format range completely encompasses this existing range
-					range.format.__merge(format);
+					if (range.start == beginIndex)
+					{
+						// deleted range would disappear and not be replaced in this case
+						range.format = range.format.clone();
+						range.format.__merge(format);
+						range.end = endIndex;
+					}
+					else
+					{
+						// delete range
+						__textEngine.textFormatRanges.removeAt(index);
+					}
 				}
-				else if (range.start >= beginIndex && range.start < endIndex && range.end > beginIndex)
+				else if (range.start > beginIndex && range.end > beginIndex)
 				{
 					// set format range is within the first part of the range
-					newRange = new TextFormatRange(range.format.clone(), range.start, endIndex);
-					newRange.format.__merge(format);
-					__textEngine.textFormatRanges.insertAt(index, newRange);
 					range.start = endIndex;
-					index++;
+					break;
 				}
-				else if (range.start < beginIndex && range.end > beginIndex && range.end >= endIndex)
+				else if (range.start < beginIndex && range.end <= endIndex)
 				{
 					// set format range is within the second part of the range
-					newRange = new TextFormatRange(range.format.clone(), beginIndex, range.end);
+					newRange = new TextFormatRange(range.format.clone(), beginIndex, endIndex);
 					newRange.format.__merge(format);
 					__textEngine.textFormatRanges.insertAt(index + 1, newRange);
 					range.end = beginIndex;
-					index++;
+					index += 2;
 				}
-
-				index++;
-				// TODO: Remove duplicates?
+				else
+				{
+					// should never happen, throw an error
+					index++;
+					Log.warn("You found a bug in OpenFL's text code! Please save a copy of your project and contact Joshua Granick (@singmajesty) so we can fix this.");
+				}
 			}
+			/*
+				// robust catchers for myriad edge cases
+				// TODO: should this be here? it would force getLayoutGroups() to never soft fail and report there's a text bug
+				if (__textEngine.textFormatRanges.length == 0)
+				{
+					newRange = new TextFormatRange(defaultTextFormat.clone(), 0, endIndex);
+					newRange.format.__merge(format);
+					__textEngine.textFormatRanges.push(newRange);
+				}
+				else if (__textEngine.textFormatRanges[__textEngine.textFormatRanges.length - 1].end < __text.length)
+				{
+					newRange = new TextFormatRange(defaultTextFormat.clone(), __textEngine.textFormatRanges[__textEngine.textFormatRanges.length - 1].end, __text.length);
+					newRange.format.__merge(format);
+					__textEngine.textFormatRanges.push(newRange);
+				}
+				else if (__textEngine.textFormatRanges[0].start > 0)
+				{
+					newRange = new TextFormatRange(defaultTextFormat.clone(), 0, __textEngine.textFormatRanges[0].start);
+					newRange.format.__merge(format);
+					__textEngine.textFormatRanges.unshift(newRange);
+				}
+			 */
 		}
 
 		__dirty = true;
@@ -1507,28 +1607,45 @@ class TextField extends InteractiveObject
 
 	@:noCompletion private function __caretBeginningOfLine():Void
 	{
-		if (__selectionIndex == __caretIndex || __caretIndex < __selectionIndex)
+		__caretIndex = getLineOffset(getLineIndexOfChar(__caretIndex));
+	}
+
+	@:noCompletion private function __caretBeginningOfNextLine():Void
+	{
+		var lineIndex = getLineIndexOfChar(__caretIndex);
+
+		if (lineIndex < __textEngine.numLines - 1)
 		{
-			__caretIndex = getLineOffset(getLineIndexOfChar(__caretIndex));
+			__caretIndex = getLineOffset(lineIndex + 1);
 		}
 		else
 		{
-			__selectionIndex = getLineOffset(getLineIndexOfChar(__selectionIndex));
+			__caretIndex = __text.length;
+		}
+	}
+
+	@:noCompletion private function __caretBeginningOfPreviousLine():Void
+	{
+		var lineIndex = getLineIndexOfChar(__caretIndex);
+
+		if (lineIndex > 0)
+		{
+			var index = getLineOffset(getLineIndexOfChar(__caretIndex));
+
+			if (__caretIndex == index)
+			{
+				__caretIndex = getLineOffset(lineIndex - 1);
+			}
+			else
+			{
+				__caretIndex = index;
+			}
 		}
 	}
 
 	@:noCompletion private function __caretEndOfLine():Void
 	{
-		var lineIndex;
-
-		if (__selectionIndex == __caretIndex)
-		{
-			lineIndex = getLineIndexOfChar(__caretIndex);
-		}
-		else
-		{
-			lineIndex = getLineIndexOfChar(Std.int(Math.max(__caretIndex, __selectionIndex)));
-		}
+		var lineIndex = getLineIndexOfChar(__caretIndex);
 
 		if (lineIndex < __textEngine.numLines - 1)
 		{
@@ -1548,25 +1665,13 @@ class TextField extends InteractiveObject
 		}
 	}
 
-	@:noCompletion private function __caretNextLine(lineIndex:Null<Int> = null, caretIndex:Null<Int> = null):Void
+	@:noCompletion private function __caretNextLine():Void
 	{
-		if (lineIndex == null)
-		{
-			lineIndex = getLineIndexOfChar(__caretIndex);
-		}
+		var lineIndex = getLineIndexOfChar(__caretIndex);
 
 		if (lineIndex < __textEngine.numLines - 1)
 		{
-			if (caretIndex == null)
-			{
-				caretIndex = __caretIndex;
-			}
-
 			__caretIndex = __getCharIndexOnDifferentLine(caretIndex, lineIndex + 1);
-		}
-		else
-		{
-			__caretIndex = __text.length;
 		}
 	}
 
@@ -1578,25 +1683,13 @@ class TextField extends InteractiveObject
 		}
 	}
 
-	@:noCompletion private function __caretPreviousLine(lineIndex:Null<Int> = null, caretIndex:Null<Int> = null):Void
+	@:noCompletion private function __caretPreviousLine():Void
 	{
-		if (lineIndex == null)
-		{
-			lineIndex = getLineIndexOfChar(__caretIndex);
-		}
+		var lineIndex = getLineIndexOfChar(__caretIndex);
 
 		if (lineIndex > 0)
 		{
-			if (caretIndex == null)
-			{
-				caretIndex = __caretIndex;
-			}
-
 			__caretIndex = __getCharIndexOnDifferentLine(caretIndex, lineIndex - 1);
-		}
-		else
-		{
-			__caretIndex = 0;
 		}
 	}
 
@@ -1665,127 +1758,6 @@ class TextField extends InteractiveObject
 			}
 		}
 		#end
-	}
-
-	@:noCompletion private function __fromSymbol(swf:SWFLite, symbol:DynamicTextSymbol):Void
-	{
-		__symbol = symbol;
-
-		width = symbol.width;
-		height = symbol.height;
-
-		__offsetX = symbol.x;
-		__offsetY = symbol.y;
-
-		multiline = symbol.multiline;
-		wordWrap = symbol.wordWrap;
-		displayAsPassword = symbol.password;
-
-		if (symbol.border)
-		{
-			border = true;
-			background = true;
-		}
-
-		selectable = symbol.selectable;
-
-		if (symbol.input)
-		{
-			type = INPUT;
-		}
-
-		var format = new TextFormat();
-		if (symbol.color != null) format.color = (symbol.color & 0x00FFFFFF);
-		format.size = Math.round(symbol.fontHeight / 20);
-
-		var font:FontSymbol = cast swf.symbols.get(symbol.fontID);
-
-		if (font != null)
-		{
-			// TODO: Bold and italic are handled in the font already
-			// Setting this can cause "extra" bold in HTML5
-
-			// format.bold = font.bold;
-			// format.italic = font.italic;
-			// format.leading = Std.int (font.leading / 20 + (format.size * 0.2) #if flash + 2 #end);
-			// embedFonts = true;
-
-			format.__ascent = ((font.ascent / 20) / 1024);
-			format.__descent = ((font.descent / 20) / 1024);
-		}
-
-		format.font = symbol.fontName;
-
-		var found = false;
-
-		switch (format.font)
-		{
-			case "_sans", "_serif", "_typewriter", "", null:
-				found = true;
-
-			default:
-				for (font in Font.enumerateFonts())
-				{
-					if (font.fontName == format.font)
-					{
-						found = true;
-						break;
-					}
-				}
-		}
-
-		if (!found)
-		{
-			var alpha = ~/[^a-zA-Z]+/g;
-
-			for (font in Font.enumerateFonts())
-			{
-				if (alpha.replace(font.fontName, "").substr(0, symbol.fontName.length) == symbol.fontName)
-				{
-					format.font = font.fontName;
-					found = true;
-					break;
-				}
-			}
-		}
-
-		if (found)
-		{
-			embedFonts = true;
-		}
-		else if (!__missingFontWarning.exists(format.font))
-		{
-			__missingFontWarning[format.font] = true;
-			Log.warn("Could not find required font \"" + format.font + "\", it has not been embedded");
-		}
-
-		if (symbol.align != null)
-		{
-			if (symbol.align == "center") format.align = TextFormatAlign.CENTER;
-			else if (symbol.align == "right") format.align = TextFormatAlign.RIGHT;
-			else if (symbol.align == "justify") format.align = TextFormatAlign.JUSTIFY;
-
-			format.leftMargin = Std.int(symbol.leftMargin / 20);
-			format.rightMargin = Std.int(symbol.rightMargin / 20);
-			format.indent = Std.int(symbol.indent / 20);
-			format.leading = Std.int(symbol.leading / 20);
-		}
-
-		defaultTextFormat = format;
-
-		if (symbol.text != null)
-		{
-			if (symbol.html)
-			{
-				htmlText = symbol.text;
-			}
-			else
-			{
-				text = symbol.text;
-			}
-		}
-
-		// autoSize = (tag.autoSize) ? TextFieldAutoSize.LEFT : TextFieldAutoSize.NONE;
 	}
 
 	@:noCompletion private inline function __getAdvance(position):Float
@@ -1979,30 +1951,6 @@ class TextField extends InteractiveObject
 		return group.endIndex;
 	}
 
-	@:noCompletion private override function __getRenderBounds(rect:Rectangle, matrix:Matrix):Void
-	{
-		if (__scrollRect == null)
-		{
-			__updateLayout();
-
-			var bounds = Rectangle.__pool.get();
-			bounds.copyFrom(__textEngine.bounds);
-
-			// matrix.tx += __offsetX;
-			// matrix.ty += __offsetY;
-
-			bounds.__transform(bounds, matrix);
-
-			rect.__expand(bounds.x, bounds.y, bounds.width, bounds.height);
-
-			Rectangle.__pool.release(bounds);
-		}
-		else
-		{
-			super.__getRenderBounds(rect, matrix);
-		}
-	}
-
 	@:noCompletion private override function __hitTest(x:Float, y:Float, shapeFlag:Bool, stack:Array<DisplayObject>, interactiveOnly:Bool,
 			hitObject:DisplayObject):Bool
 	{
@@ -2065,14 +2013,6 @@ class TextField extends InteractiveObject
 		if (startIndex < 0) startIndex = 0;
 
 		__replaceText(startIndex, endIndex, value, restrict);
-
-		var i = startIndex + cast(value, UTF8String).length;
-		if (i > __text.length) i = __text.length;
-
-		setSelection(i, i);
-
-		// TODO: Solution where this is not run twice (run inside replaceText above)
-		__updateScrollH();
 	}
 
 	@:noCompletion private function __replaceText(beginIndex:Int, endIndex:Int, newText:String, restrict:Bool):Void
@@ -2100,7 +2040,6 @@ class TextField extends InteractiveObject
 		}
 
 		__updateText(__text.substring(0, beginIndex) + newText + __text.substring(endIndex));
-		if (endIndex > __text.length) endIndex = __text.length;
 
 		var offset = newText.length - (endIndex - beginIndex);
 
@@ -2113,84 +2052,93 @@ class TextField extends InteractiveObject
 
 			if (beginIndex == endIndex)
 			{
-				if (range.end < beginIndex)
+				if (range.start == range.end)
+				{
+					// this should only ever be true if there is no text (start == end == 0)
+					if (range.start != 0)
+					{
+						Log.warn("You found a bug in OpenFL's text code! Please save a copy of your project and contact Joshua Granick (@singmajesty) so we can fix this.");
+					}
+					else
+					{
+						range.end += offset;
+					}
+				}
+				else if (range.end < beginIndex)
 				{
 					// do nothing, range is completely before insertion point
 				}
-				else if (range.start > endIndex)
+				else if (range.start >= beginIndex)
 				{
 					// shift range, range is after insertion point
 					range.start += offset;
 					range.end += offset;
 				}
-				else
+				else if (range.start < beginIndex && range.end >= endIndex)
 				{
-					if (range.start < range.end && range.end == beginIndex && i < __textEngine.textFormatRanges.length - 1)
-					{
-						// do nothing, insertion point is between two ranges, so it belongs to the next range
-						// unless there are no more ranges after this one (inserting at the end of the text)
-					}
-					else
-					{
-						// add to range, insertion point is within range
-						range.end += offset;
-					}
+					// shift end, range overlaps insertion point
+					// insertions use the format to the left of the insertion point, when beginIndex == endIndex
+					range.end += offset;
 				}
 			}
 			else
 			{
-				if (range.end < beginIndex)
+				if (range.end <= beginIndex)
 				{
 					// do nothing, range is before selection
 				}
-				else if (range.start >= endIndex)
+				else if (range.start > endIndex)
 				{
-					// shift range, range is completely after selection
+					// shift start and end, range is after selection
 					range.start += offset;
+					range.end += offset;
+				}
+				else if (range.start <= beginIndex && range.end > endIndex)
+				{
+					// shift end, range overlaps and extends after selection
 					range.end += offset;
 				}
 				else if (range.start >= beginIndex && range.end <= endIndex)
 				{
-					// delete range, range is encompassed by selection
-					if (__textEngine.textFormatRanges.length > 1)
-					{
-						__textEngine.textFormatRanges.splice(i, 1);
-					}
-					else
-					{
-						// don't delete if it's the last range though, just modify properties
-						range.start = 0;
-						range.end = newText.length;
-					}
+					// delete, range is encompassed by selection
+					__textEngine.textFormatRanges.splice(i--, 1);
 				}
-				else if (range.start <= beginIndex)
+				else if (range.end > endIndex && range.start > beginIndex && range.start <= endIndex)
 				{
-					if (range.end < endIndex)
-					{
-						// modify range, range ends before the selection ends
-						range.end = beginIndex;
-					}
-					else
-					{
-						// modify range, range ends where or after the selection ends
-						range.end += offset;
-					}
-				}
-				else
-				{
-					// modify range, selection begins before the range
-					// for deletion: entire range shifts leftward
-					// for addition: added text gains the format of endIndex
+					// set start and shift end, beginning of range overlaps selection
+					// replacements use the format to the right of the selection, when beginIndex != endIndex
 					range.start = beginIndex;
 					range.end += offset;
+				}
+				else if (range.start < beginIndex && range.end > beginIndex && range.end <= endIndex)
+				{
+					// set end, end of range overlaps selection
+					range.end = beginIndex;
 				}
 			}
 
 			i++;
 		}
 
-		__updateScrollV();
-		__updateScrollH();
+		// robust catchers for myriad edge cases
+		if (__textEngine.textFormatRanges.length == 0)
+		{
+			// add DTF, all format ranges were deleted
+			__textEngine.textFormatRanges.push(new TextFormatRange(defaultTextFormat.clone(), 0, newText.length));
+		}
+		else if (beginIndex == endIndex && __textEngine.textFormatRanges[0].start > 0)
+		{
+			// prefix DTF, text was inserted without a format
+			__textEngine.textFormatRanges.unshift(new TextFormatRange(defaultTextFormat.clone(), 0, __textEngine.textFormatRanges[0].start));
+		}
+		else if (beginIndex != endIndex && __textEngine.textFormatRanges[__textEngine.textFormatRanges.length - 1].end < __text.length)
+		{
+			// append DTF, text was replaced without a format
+			__textEngine.textFormatRanges.push(new TextFormatRange(defaultTextFormat.clone(),
+				__textEngine.textFormatRanges[__textEngine.textFormatRanges.length - 1].end, __text.length));
+		}
+
+		setSelection(beginIndex + newText.length, beginIndex + newText.length);
 
 		__dirty = true;
 		__layoutDirty = true;
@@ -2279,50 +2227,87 @@ class TextField extends InteractiveObject
 
 	@:noCompletion private function __updateScrollH():Void
 	{
-		if (!multiline && type == INPUT)
+		__updateLayout();
+
+		if (textWidth <= width - 4)
 		{
-			__layoutDirty = true;
-			__updateLayout();
+			scrollH = 0;
+			return;
+		}
 
-			var offsetX = __textEngine.textWidth - __textEngine.width + 4;
+		var tempScrollH = scrollH;
 
-			if (offsetX > 0)
+		// margins are ignored here
+
+		if (__caretIndex == 0 || getLineOffset(getLineIndexOfChar(__caretIndex)) == __caretIndex)
+		{
+			// first index in a line is always at 0 scrollH
+			tempScrollH = 0;
+		}
+		else
+		{
+			var caret = Rectangle.__pool.get();
+			var written = false;
+
+			if (__caretIndex < __text.length)
 			{
-				// TODO: Handle __selectionIndex on drag select?
-				// TODO: Update scrollH by one character width at a time when able
-
-				if (__caretIndex >= text.length)
-				{
-					scrollH = Math.ceil(offsetX);
-				}
-				else
-				{
-					var caret = Rectangle.__pool.get();
-					__getCharBoundaries(__caretIndex, caret);
-
-					if (caret.x < scrollH)
-					{
-						scrollH = Math.floor(caret.x - 2);
-					}
-					else if (caret.x > scrollH + __textEngine.width)
-					{
-						scrollH = Math.ceil(caret.x - __textEngine.width - 2);
-					}
-
-					Rectangle.__pool.release(caret);
-				}
+				written = __getCharBoundaries(__caretIndex, caret);
 			}
-			else
+			if (!written)
 			{
-				scrollH = 0;
+				// \n and \r don't have character boundaries, as well as when caretIndex == text.length
+				// written doesn't need to be checked again, covered earlier
+				__getCharBoundaries(__caretIndex - 1, caret);
+				caret.x += caret.width; // shift rectangle to where the caret is
+			}
+
+			while (caret.x < tempScrollH && tempScrollH > 0)
+			{
+				tempScrollH -= 24;
+			}
+			while (caret.x > tempScrollH + width - 4)
+			{
+				tempScrollH += 24;
+			}
+
+			Rectangle.__pool.release(caret);
+		}
+
+		if (tempScrollH > 0 && type != INPUT)
+		{
+			// input text leaves some room after scrolling to the last character in a line. dynamic text does not
+			var lineLength = getLineLength(getLineIndexOfChar(__caretIndex));
+			if (scrollH + width - 4 > lineLength)
+			{
+				scrollH = Math.ceil(lineLength - width + 4);
 			}
 		}
+
+		if (tempScrollH < 0)
+		{
+			scrollH = 0;
+		}
+		else if (tempScrollH > maxScrollH)
+		{
+			scrollH = maxScrollH;
+		}
+		else
+		{
+			scrollH = tempScrollH;
+		}
+
+		// TODO: Handle drag select
 	}
 
 	@:noCompletion private function __updateScrollV():Void
 	{
-		__layoutDirty = true;
 		__updateLayout();
+
+		if (textHeight <= height - 4)
+		{
+			scrollV = 1;
+			return;
+		}
 
 		var lineIndex = getLineIndexOfChar(__caretIndex);
 
@@ -2659,7 +2644,7 @@ class TextField extends InteractiveObject
 		#else
 		__updateText(value);
 		#end
-		__updateScrollV();
+		setSelection(length, length);
 
 		return value;
 	}
@@ -2888,7 +2873,7 @@ class TextField extends InteractiveObject
 		__isHTML = false;
 
 		__updateText(value);
-		__updateScrollV();
+		setSelection(0, 0);
 
 		return value;
 	}
@@ -3023,7 +3008,7 @@ class TextField extends InteractiveObject
 	{
 		if (stage == null) return;
 
-		if (__textEngine.selectable && __selectionIndex >= 0)
+		if (selectable && __selectionIndex >= 0)
 		{
 			__updateLayout();
 
@@ -3033,6 +3018,8 @@ class TextField extends InteractiveObject
 			{
 				__caretIndex = position;
 
+				var setDirty = true;
+
 				#if (js && html5)
 				if (DisplayObject.__supportDOM)
 				{
@@ -3040,9 +3027,11 @@ class TextField extends InteractiveObject
 					{
 						__forceCachedBitmapUpdate = true;
 					}
+					setDirty = false;
 				}
-				else
 				#end
+
+				if (setDirty)
 				{
 					__dirty = true;
 					__setRenderDirty();
@@ -3109,7 +3098,7 @@ class TextField extends InteractiveObject
 
 		// TODO: Better system
 
-		if (event.relatedObject == null || !Std.is(event.relatedObject, TextField))
+		if (event.relatedObject == null || !(event.relatedObject is TextField))
 		{
 			__stopTextInput();
 		}
@@ -3174,6 +3163,55 @@ class TextField extends InteractiveObject
 		}
 	}
 
+	@:noCompletion private function this_onDoubleClick(event:MouseEvent):Void
+	{
+		if (selectable)
+		{
+			__updateLayout();
+
+			var delimiters:Array<String> = ['\n', '.', '!', '?', ',', ' ', ';', ':', '(', ')', '-', '_', '/'];
+
+			var txtStr:String = __text;
+			var leftPos:Int = -1;
+			var rightPos:Int = txtStr.length;
+			var pos:Int = 0;
+			var startPos:Int = Std.int(Math.max(__caretIndex, 1));
+			if (txtStr.length > 0 && __caretIndex >= 0 && rightPos >= __caretIndex)
+			{
+				for (c in delimiters)
+				{
+					pos = txtStr.lastIndexOf(c, startPos - 1);
+					if (pos > leftPos) leftPos = pos + 1;
+
+					pos = txtStr.indexOf(c, startPos);
+					if (pos < rightPos && pos != -1) rightPos = pos;
+				}
+
+				if (leftPos != rightPos)
+				{
+					setSelection(leftPos, rightPos);
+
+					var setDirty:Bool = true;
+					#if openfl_html5
+					if (DisplayObject.__supportDOM)
+					{
+						if (__renderedOnCanvasWhileOnDOM)
+						{
+							__forceCachedBitmapUpdate = true;
+						}
+						setDirty = false;
+					}
+					#end
+					if (setDirty)
+					{
+						__dirty = true;
+						__setRenderDirty();
+					}
+				}
+			}
+		}
+	}
+
 	#if lime
 	@:noCompletion private function window_onKeyDown(key:KeyCode, modifier:KeyModifier):Void
 	{
@@ -3193,6 +3231,11 @@ class TextField extends InteractiveObject
 						dispatchEvent(new Event(Event.CHANGE, true));
 					}
 				}
+				else
+				{
+					__stopCursorTimer();
+					__startCursorTimer();
+				}
 
 			case BACKSPACE:
 				if (__selectionIndex == __caretIndex && __caretIndex > 0)
@@ -3206,6 +3249,11 @@ class TextField extends InteractiveObject
 					__selectionIndex = __caretIndex;
 
 					dispatchEvent(new Event(Event.CHANGE, true));
+				}
+				else
+				{
+					__stopCursorTimer();
+					__startCursorTimer();
 				}
 
 			case DELETE:
@@ -3221,137 +3269,113 @@ class TextField extends InteractiveObject
 
 					dispatchEvent(new Event(Event.CHANGE, true));
 				}
+				else
+				{
+					__stopCursorTimer();
+					__startCursorTimer();
+				}
 
 			case LEFT if (selectable):
-				if (modifier.metaKey)
+				if (#if mac modifier.metaKey #elseif js modifier.metaKey || modifier.ctrlKey #else modifier.ctrlKey #end)
 				{
-					__caretBeginningOfLine();
-
-					if (!modifier.shiftKey)
-					{
-						__selectionIndex = __caretIndex;
-					}
+					__caretBeginningOfPreviousLine();
 				}
-				else if (modifier.shiftKey)
+				else
 				{
 					__caretPreviousCharacter();
 				}
-				else
-				{
-					if (__selectionIndex == __caretIndex)
-					{
-						__caretPreviousCharacter();
-					}
-					else
-					{
-						__caretIndex = Std.int(Math.min(__caretIndex, __selectionIndex));
-					}
 
+				if (!modifier.shiftKey)
+				{
 					__selectionIndex = __caretIndex;
 				}
 
-				__updateScrollH();
-				__updateScrollV();
-				__stopCursorTimer();
-				__startCursorTimer();
+				setSelection(__selectionIndex, __caretIndex);
 
 			case RIGHT if (selectable):
-				if (modifier.metaKey)
+				if (#if mac modifier.metaKey #elseif js modifier.metaKey || modifier.ctrlKey #else modifier.ctrlKey #end)
 				{
-					__caretEndOfLine();
-
-					if (!modifier.shiftKey)
-					{
-						__selectionIndex = __caretIndex;
-					}
+					__caretBeginningOfNextLine();
 				}
-				else if (modifier.shiftKey)
+				else
 				{
 					__caretNextCharacter();
 				}
-				else
-				{
-					if (__selectionIndex == __caretIndex)
-					{
-						__caretNextCharacter();
-					}
-					else
-					{
-						__caretIndex = Std.int(Math.max(__caretIndex, __selectionIndex));
-					}
 
+				if (!modifier.shiftKey)
+				{
 					__selectionIndex = __caretIndex;
 				}
 
-				__updateScrollH();
-				__updateScrollV();
-
-				__stopCursorTimer();
-				__startCursorTimer();
+				setSelection(__selectionIndex, __caretIndex);
 
 			case DOWN if (selectable):
-				if (!__textEngine.multiline) return;
-
-				if (modifier.shiftKey)
+				if (#if mac modifier.metaKey #elseif js modifier.metaKey || modifier.ctrlKey #else modifier.ctrlKey #end)
+				{
+					__caretIndex = __text.length;
+				}
+				else
 				{
 					__caretNextLine();
 				}
-				else
-				{
-					if (__selectionIndex == __caretIndex)
-					{
-						__caretNextLine();
-					}
-					else
-					{
-						var lineIndex = getLineIndexOfChar(Std.int(Math.max(__caretIndex, __selectionIndex)));
-						__caretNextLine(lineIndex, Std.int(Math.min(__caretIndex, __selectionIndex)));
-					}
 
+				if (!modifier.shiftKey)
+				{
 					__selectionIndex = __caretIndex;
 				}
 
-				__updateScrollV();
-
-				__stopCursorTimer();
-				__startCursorTimer();
+				setSelection(__selectionIndex, __caretIndex);
 
 			case UP if (selectable):
-				if (!__textEngine.multiline) return;
-
-				if (modifier.shiftKey)
+				if (#if mac modifier.metaKey #elseif js modifier.metaKey || modifier.ctrlKey #else modifier.ctrlKey #end)
+				{
+					__caretIndex = 0;
+				}
+				else
 				{
 					__caretPreviousLine();
 				}
-				else
-				{
-					if (__selectionIndex == __caretIndex)
-					{
-						__caretPreviousLine();
-					}
-					else
-					{
-						var lineIndex = getLineIndexOfChar(Std.int(Math.min(__caretIndex, __selectionIndex)));
-						__caretPreviousLine(lineIndex, Std.int(Math.min(__caretIndex, __selectionIndex)));
-					}
 
+				if (!modifier.shiftKey)
+				{
 					__selectionIndex = __caretIndex;
 				}
 
-				__updateScrollV();
-
-				__stopCursorTimer();
-				__startCursorTimer();
+				setSelection(__selectionIndex, __caretIndex);
 
 			case HOME if (selectable):
-				__caretBeginningOfLine();
-				__stopCursorTimer();
-				__startCursorTimer();
+				if (#if mac modifier.metaKey #elseif js modifier.metaKey || modifier.ctrlKey #else modifier.ctrlKey #end)
+				{
+					__caretIndex = 0;
+				}
+				else
+				{
+					__caretBeginningOfLine();
+				}
+
+				if (!modifier.shiftKey)
+				{
+					__selectionIndex = __caretIndex;
+				}
+
+				setSelection(__selectionIndex, __caretIndex);
 
 			case END if (selectable):
-				__caretEndOfLine();
-				__stopCursorTimer();
-				__startCursorTimer();
+				if (#if mac modifier.metaKey #elseif js modifier.metaKey || modifier.ctrlKey #else modifier.ctrlKey #end)
+				{
+					__caretIndex = __text.length;
+				}
+				else
+				{
+					__caretEndOfLine();
+				}
+
+				if (!modifier.shiftKey)
+				{
+					__selectionIndex = __caretIndex;
+				}
+
+				setSelection(__selectionIndex, __caretIndex);
 
 			case C:
 				#if lime
