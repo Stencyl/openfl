@@ -33,6 +33,7 @@ import openfl.display._internal.Context3DBuffer;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
+@:access(openfl.display.DisplayObject)
 @:access(openfl.display.Tile)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
@@ -117,7 +118,9 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	{
 		super();
 
+		#if !flash
 		__drawableType = TILEMAP;
+		#end
 		__tileset = tileset;
 		this.smoothing = smoothing;
 
