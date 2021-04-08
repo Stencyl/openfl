@@ -1987,9 +1987,9 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		{
 			if (context3D != null)
 			{
-				for (stage3D in stage3Ds)
+				for (i in 0...stage3Ds.length)
 				{
-					context3D.__renderStage3D(stage3D);
+					context3D.__renderStage3D(stage3Ds[i]);
 				}
 
 				#if !openfl_disable_display_render

@@ -25,8 +25,9 @@ class Context3DDisplayObjectContainer
 
 			if (renderer.__stage != null)
 			{
-				for (child in displayObjectContainer.__children)
+				for (i in 0...displayObjectContainer.__children.length)
 				{
+					var child = displayObjectContainer.__children[i];
 					renderer.__renderDrawable(child);
 					child.__renderDirty = false;
 				}
@@ -35,8 +36,9 @@ class Context3DDisplayObjectContainer
 			}
 			else
 			{
-				for (child in displayObjectContainer.__children)
+				for (i in 0...displayObjectContainer.__children.length)
 				{
+					var child = displayObjectContainer.__children[i];
 					renderer.__renderDrawable(child);
 				}
 			}

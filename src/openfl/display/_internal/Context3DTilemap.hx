@@ -80,6 +80,20 @@ class Context3DTilemap
 		Matrix.__pool.release(parentTransform);
 	}
 
+	private static function getTileContainerLength(_group:TileContainer):Int
+	{
+		var _tiles = _group.__tiles;
+		var totalLength = 0;
+		for (i in 0..._tiles.length)
+		{
+			var tile = _tiles[i];
+			if (tile.__length > 0) totalLength += getTileContainerLength(cast tile);
+			else
+				totalLength++;
+		}
+		return totalLength;
+	}
+
 	private static function buildBufferTileContainer(tilemap:Tilemap, group:TileContainer, renderer:OpenGLRenderer, parentTransform:Matrix,
 			defaultTileset:Tileset, alphaEnabled:Bool, worldAlpha:Float, colorTransformEnabled:Bool, defaultColorTransform:ColorTransform,
 			cacheBitmapData:BitmapData, rect:Rectangle, matrix:Matrix, isTopLevel:Bool = true):Void
@@ -90,20 +104,7 @@ class Context3DTilemap
 		var tiles = group.__tiles;
 		var length = group.__length;
 
-		function getLength(_group:TileContainer):Int
-		{
-			var _tiles = _group.__tiles;
-			var totalLength = 0;
-			for (tile in _tiles)
-			{
-				if (tile.__length > 0) totalLength += getLength(cast tile);
-				else
-					totalLength++;
-			}
-			return totalLength;
-		}
-
-		if (isTopLevel) resizeBuffer(tilemap, numTiles + getLength(group));
+		if (isTopLevel) resizeBuffer(tilemap, numTiles + getTileContainerLength(group));
 
 		// Todo: Merge recursive length lookup with for tiles loop to avoid iterating over tiles twice
 		// resizeBuffer(tilemap, numTiles + length);
@@ -123,8 +124,9 @@ class Context3DTilemap
 		var alphaPosition = 4;
 		var ctPosition = alphaEnabled ? 5 : 4;
 
-		for (tile in tiles)
+		for (tileIndex in 0...tiles.length)
 		{
+			var tile = tiles[tileIndex];
 			tileTransform.setTo(1, 0, 0, 1, -tile.originX, -tile.originY);
 			tileTransform.concat(tile.matrix);
 			tileTransform.concat(parentTransform);
