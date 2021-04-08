@@ -40,6 +40,13 @@ class DrawCommandReader
 		prev = UNKNOWN;
 	}
 
+	public function setBuffer(buffer:DrawCommandBuffer)
+	{
+		if(this.buffer != null)
+			throw "Can't reuse DrawCommandReader until it's been destroyed.";
+		this.buffer = buffer;
+	}
+
 	@:noCompletion private inline function advance():Void
 	{
 		switch (prev)
@@ -321,6 +328,7 @@ class DrawCommandReader
 	public function reset():Void
 	{
 		bPos = iPos = fPos = oPos = ffPos = iiPos = tsPos = 0;
+		prev = UNKNOWN;
 	}
 
 	public inline function skip(type:DrawCommandType):Void

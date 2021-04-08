@@ -47,6 +47,8 @@ class CanvasGraphics
 	private static var hitTesting:Bool;
 	private static var inversePendingMatrix:Matrix;
 	private static var pendingMatrix:Matrix;
+	private static var readerPool:Array<DrawCommandReader> = [];
+	private static var readerPoolIndex:Int = 0;
 	private static var strokeCommands:DrawCommandBuffer = new DrawCommandBuffer();
 	@SuppressWarnings("checkstyle:Dynamic") private static var windingRule:#if (js && html5) CanvasWindingRule #else Dynamic #end;
 	private static var worldAlpha:Float;
@@ -238,6 +240,26 @@ class CanvasGraphics
 		#end
 	}
 
+	private static inline function getReaderFromPool(buffer:DrawCommandBuffer)
+	{
+		if(readerPoolIndex >= readerPool.length)
+		{
+			readerPool[readerPoolIndex] = new DrawCommandReader(null);
+		}
+		var reader = readerPool[readerPoolIndex];
+		reader.setBuffer(buffer);
+		++readerPoolIndex;
+		return reader;
+		//return new DrawCommandReader(buffer);
+	}
+
+	private static inline function releaseReaderToPool(reader:DrawCommandReader)
+	{
+		--readerPoolIndex;
+		reader.destroy();
+		//reader.destroy();
+	}
+
 	public static function hitTest(graphics:Graphics, x:Float, y:Float):Bool
 	{
 		#if (js && html5)
@@ -281,7 +303,7 @@ class CanvasGraphics
 
 			windingRule = CanvasWindingRule.EVENODD;
 
-			var data = new DrawCommandReader(graphics.__commands);
+			var data = getReaderFromPool(graphics.__commands);
 
 			var types = graphics.__commands.types;
 
@@ -450,7 +472,7 @@ class CanvasGraphics
 				hitTest = true;
 			}
 
-			data.destroy();
+			releaseReaderToPool(data);
 
 			graphics.__canvas = cacheCanvas;
 			graphics.__context = cacheContext;
@@ -528,7 +550,7 @@ class CanvasGraphics
 
 		var hasPath:Bool = false;
 
-		var data = new DrawCommandReader(commands);
+		var data = getReaderFromPool(commands);
 
 		var x,
 			y,
@@ -1096,7 +1118,7 @@ class CanvasGraphics
 		if (stl != null) Point.__pool.release(stl);
 		if (sbr != null) Point.__pool.release(sbr);
 
-		data.destroy();
+		releaseReaderToPool(data);
 
 		if (hasPath)
 		{
@@ -1233,7 +1255,7 @@ class CanvasGraphics
 
 				windingRule = CanvasWindingRule.EVENODD;
 
-				var data = new DrawCommandReader(graphics.__commands);
+				var data = getReaderFromPool(graphics.__commands);
 
 				var types = graphics.__commands.types;
 
@@ -1456,7 +1478,7 @@ class CanvasGraphics
 					endStroke();
 				}
 
-				data.destroy();
+				releaseReaderToPool(data);
 				graphics.__bitmap = BitmapData.fromCanvas(graphics.__canvas);
 			}
 
@@ -1482,7 +1504,7 @@ class CanvasGraphics
 			var offsetX = 0;
 			var offsetY = 0;
 
-			var data = new DrawCommandReader(graphics.__commands);
+			var data = getReaderFromPool(graphics.__commands);
 
 			var x, y, width, height, kappa = .5522848, ox, oy, xe, ye, xm, ym;
 			
@@ -1569,7 +1591,7 @@ class CanvasGraphics
 				}
 			}
 
-			data.destroy();
+			releaseReaderToPool(data);
 		}
 		#end
 	}
