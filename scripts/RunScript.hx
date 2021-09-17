@@ -30,16 +30,16 @@ class RunScript
 
 			if (limeDirectory == null || limeDirectory == "" || limeDirectory.indexOf("is not installed") > -1)
 			{
-				Sys.command("haxelib", ["install", "lime"]);
+				System.createProcess("haxelib", ["install", "lime"]);
 			}
 		}
 		else if (args.length > 0 && args[0] == "process")
 		{
-			Sys.exit(Sys.command("haxelib", ["run", "swf"].concat(args)));
+			Sys.exit(System.createProcess("haxelib", ["run", "swf"].concat(args)));
 			return;
 		}
 
 		var args = ["run", "lime"].concat(args);
-		Sys.exit(Sys.command("haxelib", args.concat(["-openfl"])));
+		Sys.exit(System.createProcess("haxelib", args.concat(["-openfl"])));
 	}
 }
