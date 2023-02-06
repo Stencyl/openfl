@@ -258,7 +258,8 @@ class DisplayObjectContainer extends InteractiveObject
 			if (addedToStage)
 			{
 				#if openfl_pool_events
-				event = Event.__pool.get(Event.ADDED_TO_STAGE);
+				event = Event.__pool.get();
+				event.type = Event.ADDED_TO_STAGE;
 				#else
 				event = new Event(Event.ADDED_TO_STAGE, false, false);
 				#end
@@ -973,6 +974,7 @@ class DisplayObjectContainer extends InteractiveObject
 	}
 
 	// Get & Set Methods
+
 	@:noCompletion private function get_numChildren():Int
 	{
 		return __children.length;

@@ -91,6 +91,7 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var oldRenderTransform:Matrix;
 	#end
 	@:noCompletion private var __bitmap:BitmapData;
+	@:noCompletion private var __bitmapScale:Float;
 
 	@:noCompletion private function new(owner:DisplayObject)
 	{
@@ -105,6 +106,8 @@ import js.html.CanvasRenderingContext2D;
 		__worldTransform = new Matrix();
 		__width = 0;
 		__height = 0;
+
+		__bitmapScale = 1;
 
 		__shaderBufferPool = new ObjectPool<ShaderBuffer>(function() return new ShaderBuffer());
 
@@ -516,24 +519,24 @@ import js.html.CanvasRenderingContext2D;
 		iy1 = anchorY;
 		iy2 = anchorY;
 
-		if (!(((controlY1 < anchorY && controlY1 > __positionX) || (controlY1 > anchorY && controlY1 < __positionX))
-			&& ((controlY2 < anchorY && controlY2 > __positionX) || (controlY2 > anchorY && controlY2 < __positionX))))
+		if (!(((controlY1 < anchorY && controlY1 > __positionY) || (controlY1 > anchorY && controlY1 < __positionY))
+			&& ((controlY2 < anchorY && controlY2 > __positionY) || (controlY2 > anchorY && controlY2 < __positionY))))
 		{
-			var u = (2 * __positionX - 4 * controlY1 + 2 * controlY2);
-			var v = (controlY1 - __positionX);
-			var w = (-__positionX + 3 * controlY1 + anchorY - 3 * controlY2);
+			var u = (2 * __positionY - 4 * controlY1 + 2 * controlY2);
+			var v = (controlY1 - __positionY);
+			var w = (-__positionY + 3 * controlY1 + anchorY - 3 * controlY2);
 
 			var t1 = (-u + Math.sqrt(u * u - 4 * v * w)) / (2 * w);
 			var t2 = (-u - Math.sqrt(u * u - 4 * v * w)) / (2 * w);
 
 			if (t1 > 0 && t1 < 1)
 			{
-				iy1 = __calculateBezierCubicPoint(t1, __positionX, controlY1, controlY2, anchorY);
+				iy1 = __calculateBezierCubicPoint(t1, __positionY, controlY1, controlY2, anchorY);
 			}
 
 			if (t2 > 0 && t2 < 1)
 			{
-				iy2 = __calculateBezierCubicPoint(t2, __positionX, controlY1, controlY2, anchorY);
+				iy2 = __calculateBezierCubicPoint(t2, __positionY, controlY1, controlY2, anchorY);
 			}
 		}
 
@@ -617,6 +620,9 @@ import js.html.CanvasRenderingContext2D;
 
 		__positionX = anchorX;
 		__positionY = anchorY;
+
+		__inflateBounds(__positionX - __strokePadding, __positionY - __strokePadding);
+		__inflateBounds(__positionX + __strokePadding, __positionY + __strokePadding);
 
 		__commands.curveTo(controlX, controlY, anchorX, anchorY);
 
@@ -1478,11 +1484,11 @@ import js.html.CanvasRenderingContext2D;
 		{
 			if (joints == JointStyle.MITER)
 			{
-				if (thickness > __strokePadding) __strokePadding = thickness;
+				if (thickness > __strokePadding) __strokePadding = Math.ceil(thickness);
 			}
 			else
 			{
-				if (thickness / 2 > __strokePadding) __strokePadding = thickness / 2;
+				if (thickness / 2 > __strokePadding) __strokePadding = Math.ceil(thickness / 2);
 			}
 		}
 
@@ -1835,14 +1841,16 @@ import js.html.CanvasRenderingContext2D;
 		}
 	}
 
-	@:noCompletion private function __update(displayMatrix:Matrix):Void
+	@:noCompletion private function __update(displayMatrix:Matrix, pixelRatio:Float):Void
 	{
 		if (__bounds == null || __bounds.width <= 0 || __bounds.height <= 0) return;
 
 		var parentTransform = __owner.__renderTransform;
-		var scaleX = 1.0, scaleY = 1.0;
+		if (parentTransform == null) return;
 
-		if (parentTransform != null)
+		var scaleX = pixelRatio, scaleY = pixelRatio;
+
+		if (__owner.__worldScale9Grid == null)
 		{
 			if (parentTransform.b == 0)
 			{
@@ -1861,37 +1869,33 @@ import js.html.CanvasRenderingContext2D;
 			{
 				scaleY = Math.sqrt(parentTransform.c * parentTransform.c + parentTransform.d * parentTransform.d);
 			}
-		}
-		else
-		{
-			return;
-		}
 
-		if (displayMatrix != null)
-		{
-			if (displayMatrix.b == 0)
+			if (displayMatrix != null)
 			{
-				scaleX *= displayMatrix.a;
-			}
-			else
-			{
-				scaleX *= Math.sqrt(displayMatrix.a * displayMatrix.a + displayMatrix.b * displayMatrix.b);
+				if (displayMatrix.b == 0)
+				{
+					scaleX *= displayMatrix.a;
+				}
+				else
+				{
+					scaleX *= Math.sqrt(displayMatrix.a * displayMatrix.a + displayMatrix.b * displayMatrix.b);
+				}
+
+				if (displayMatrix.c == 0)
+				{
+					scaleY *= displayMatrix.d;
+				}
+				else
+				{
+					scaleY *= Math.sqrt(displayMatrix.c * displayMatrix.c + displayMatrix.d * displayMatrix.d);
+				}
 			}
 
-			if (displayMatrix.c == 0)
-			{
-				scaleY *= displayMatrix.d;
-			}
-			else
-			{
-				scaleY *= Math.sqrt(displayMatrix.c * displayMatrix.c + displayMatrix.d * displayMatrix.d);
-			}
+			#if openfl_disable_graphics_upscaling
+			if (scaleX > 1) scaleX = 1;
+			if (scaleY > 1) scaleY = 1;
+			#end
 		}
-
-		#if openfl_disable_graphics_upscaling
-		if (scaleX > 1) scaleX = 1;
-		if (scaleY > 1) scaleY = 1;
-		#end
 
 		var width = __bounds.width * scaleX;
 		var height = __bounds.height * scaleY;
@@ -1916,10 +1920,22 @@ import js.html.CanvasRenderingContext2D;
 			scaleY = maxTextureHeight / __bounds.height;
 		}
 
-		__renderTransform.a = width / __bounds.width;
-		__renderTransform.d = height / __bounds.height;
-		var inverseA = (1 / __renderTransform.a);
-		var inverseD = (1 / __renderTransform.d);
+		var inverseA, inverseD;
+
+		if (__owner.__worldScale9Grid != null)
+		{
+			__renderTransform.a = pixelRatio;
+			__renderTransform.d = pixelRatio;
+			inverseA = 1 / pixelRatio;
+			inverseD = 1 / pixelRatio;
+		}
+		else
+		{
+			__renderTransform.a = width / __bounds.width;
+			__renderTransform.d = height / __bounds.height;
+			inverseA = (1 / __renderTransform.a);
+			inverseD = (1 / __renderTransform.d);
+		}
 
 		// Inlined & simplified `__worldTransform.concat (parentTransform)` below:
 		__worldTransform.a = inverseA * parentTransform.a;

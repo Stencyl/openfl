@@ -31,8 +31,8 @@ class CanvasTextField
 	{
 		#if (js && html5)
 		var textEngine = textField.__textEngine;
-		//textBounds maximizes rendering efficiency by clipping the rectangle to a minimal size containing only the text. Measurements 
-		//will always be smaller than bounds.
+		// textBounds maximizes rendering efficiency by clipping the rectangle to a minimal size containing only the text. Measurements
+		// will always be smaller than bounds.
 		var useTextBounds = !(textEngine.background || textEngine.border);
 		var bounds = useTextBounds ? textEngine.textBounds : textEngine.bounds;
 		var graphics = textField.__graphics;
@@ -46,18 +46,18 @@ class CanvasTextField
 			{
 				graphics.__bounds = new Rectangle();
 			}
-			
-			//There might be a better way of handling this!			
+
+			// There might be a better way of handling this!
 			if (textField.text.length == 0)
-			{				
+			{
 				var boundsWidth = textEngine.bounds.width - 4;
 				var align = textField.defaultTextFormat.align;
-				
+
 				cursorOffsetX = (align == LEFT) ? 0 : (align == RIGHT) ? boundsWidth : boundsWidth / 2;
-				
-				switch(align)
+
+				switch (align)
 				{
-					case LEFT :
+					case LEFT:
 						cursorOffsetX += textField.defaultTextFormat.leftMargin;
 						cursorOffsetX += textField.defaultTextFormat.indent;
 						cursorOffsetX += textField.defaultTextFormat.blockIndent;
@@ -66,18 +66,18 @@ class CanvasTextField
 					case CENTER:
 						cursorOffsetX += (textField.defaultTextFormat.leftMargin / 2);
 						cursorOffsetX -= (textField.defaultTextFormat.rightMargin / 2);
-						cursorOffsetX += textField.defaultTextFormat.indent/ 2;
-						cursorOffsetX += textField.defaultTextFormat.blockIndent/ 2;
+						cursorOffsetX += textField.defaultTextFormat.indent / 2;
+						cursorOffsetX += textField.defaultTextFormat.blockIndent / 2;
 					case START:
-						//not supported?
+					// not supported?
 					case JUSTIFY:
 						cursorOffsetX += textField.defaultTextFormat.leftMargin;
 						cursorOffsetX += textField.defaultTextFormat.indent;
 						cursorOffsetX += textField.defaultTextFormat.blockIndent;
 					case END:
-						//not supported in Textfield yet?
+						// not supported in Textfield yet?
 				}
-				
+
 				if (useTextBounds)
 				{
 					bounds.y = textEngine.bounds.y;
@@ -88,12 +88,18 @@ class CanvasTextField
 			graphics.__bounds.copyFrom(bounds);
 		}
 
-		graphics.__update(renderer.__worldTransform);
+		#if (openfl_disable_hdpi || openfl_disable_hdpi_textfield)
+		var pixelRatio = 1;
+		#else
+		var pixelRatio = renderer.__pixelRatio;
+		#end
+
+		graphics.__update(renderer.__worldTransform, pixelRatio);
 
 		if (textField.__dirty || graphics.__softwareDirty)
 		{
-			var width = graphics.__width;
-			var height = graphics.__height;
+			var width = Math.round(graphics.__width * pixelRatio);
+			var height = Math.round(graphics.__height * pixelRatio);
 
 			if (((textEngine.text == null || textEngine.text == "")
 				&& !textEngine.background
@@ -119,32 +125,22 @@ class CanvasTextField
 
 				context = graphics.__context;
 
-				var transform = graphics.__renderTransform;
+				graphics.__canvas.width = width;
+				graphics.__canvas.height = height;
 
 				if (renderer.__isDOM)
 				{
-					var scale = renderer.pixelRatio;
-
-					graphics.__canvas.width = Std.int(width * scale);
-					graphics.__canvas.height = Std.int(height * scale);
-					graphics.__canvas.style.width = width + "px";
-					graphics.__canvas.style.height = height + "px";
-
-					var matrix = Matrix.__pool.get();
-					matrix.copyFrom(transform);
-					matrix.scale(scale, scale);
-
-					renderer.setTransform(matrix, context);
-
-					Matrix.__pool.release(matrix);
+					graphics.__canvas.style.width = Math.round(width / pixelRatio) + "px";
+					graphics.__canvas.style.height = Math.round(height / pixelRatio) + "px";
 				}
-				else
-				{
-					graphics.__canvas.width = width;
-					graphics.__canvas.height = height;
 
-					context.setTransform(transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty);
-				}
+				var matrix = Matrix.__pool.get();
+				matrix.scale(pixelRatio, pixelRatio);
+				matrix.concat(graphics.__renderTransform);
+
+				context.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty);
+
+				Matrix.__pool.release(matrix);
 
 				if (clearRect == null)
 				{
@@ -314,8 +310,9 @@ class CanvasTextField
 							context.beginPath();
 							context.strokeStyle = color;
 							context.lineWidth = 1;
+							var descent = Math.floor(group.ascent * 0.185);
 							var x = group.offsetX + scrollX - bounds.x;
-							var y = Math.floor(group.offsetY + scrollY + group.ascent - bounds.y) + 0.5;
+							var y = Math.ceil(group.offsetY + scrollY + group.ascent - bounds.y) + descent + 0.5;
 							context.moveTo(x, y);
 							context.lineTo(x + group.width, y);
 							context.stroke();
@@ -372,6 +369,7 @@ class CanvasTextField
 				}
 
 				graphics.__bitmap = BitmapData.fromCanvas(textField.__graphics.__canvas);
+				graphics.__bitmapScale = pixelRatio;
 				graphics.__visible = true;
 				textField.__dirty = false;
 				graphics.__softwareDirty = false;
@@ -397,7 +395,8 @@ class CanvasTextField
 
 			if (textField.__isHTML)
 			{
-				textField.__updateText(HTMLParser.parse(textField.__text, textField.__textFormat, textField.__textEngine.textFormatRanges));
+				textField.__updateText(HTMLParser.parse(textField.__text, textField.multiline, textField.__styleSheet, textField.__textFormat,
+					textField.__textEngine.textFormatRanges));
 			}
 
 			textField.__dirty = true;

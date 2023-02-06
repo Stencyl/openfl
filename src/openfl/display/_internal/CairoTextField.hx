@@ -32,14 +32,14 @@ class CairoTextField
 	{
 		#if lime_cairo
 		var textEngine = textField.__textEngine;
-		//textBounds maximizes rendering efficiency by clipping the rectangle to a minimal size containing only the text. Measurements 
-		//will always be smaller than bounds.
+		// textBounds maximizes rendering efficiency by clipping the rectangle to a minimal size containing only the text. Measurements
+		// will always be smaller than bounds.
 		var useTextBounds = !(textEngine.background || textEngine.border);
 		var bounds = useTextBounds ? textEngine.textBounds : textEngine.bounds;
 		var graphics = textField.__graphics;
 		var cairo = graphics.__cairo;
 		var cursorOffsetX = 0.0;
-		
+
 		if (textField.__dirty)
 		{
 			textField.__updateLayout();
@@ -48,14 +48,15 @@ class CairoTextField
 			{
 				graphics.__bounds = new Rectangle();
 			}
-			//There might be a better way of handling this!			
+			// There might be a better way of handling this!
 			if (textField.text.length == 0)
 			{
 				var boundsWidth = textEngine.bounds.width - 4;
 				var align = textField.defaultTextFormat.align;
 				cursorOffsetX = (align == LEFT) ? 0 : (align == RIGHT) ? boundsWidth : boundsWidth / 2;
-				switch(align){
-					case LEFT :
+				switch (align)
+				{
+					case LEFT:
 						cursorOffsetX += textField.defaultTextFormat.leftMargin;
 						cursorOffsetX += textField.defaultTextFormat.indent;
 						cursorOffsetX += textField.defaultTextFormat.blockIndent;
@@ -67,13 +68,13 @@ class CairoTextField
 						cursorOffsetX += textField.defaultTextFormat.indent;
 						cursorOffsetX += textField.defaultTextFormat.blockIndent;
 					case START:
-						//not supported?
+					// not supported?
 					case JUSTIFY:
 						cursorOffsetX += textField.defaultTextFormat.leftMargin;
 						cursorOffsetX += textField.defaultTextFormat.indent;
 						cursorOffsetX += textField.defaultTextFormat.blockIndent;
 					case END:
-						//not supported in Textfield yet?
+						// not supported in Textfield yet?
 				}
 				if (useTextBounds)
 				{
@@ -81,17 +82,23 @@ class CairoTextField
 					bounds.x = cursorOffsetX;
 				}
 			}
-				
+
 			graphics.__bounds.copyFrom(bounds);
 
 			// graphics.__bounds.x += textField.__offsetX;
 			// graphics.__bounds.y += textField.__offsetY;
 		}
 
-		graphics.__update(renderer.__worldTransform);
+		#if (openfl_disable_hdpi || openfl_disable_hdpi_textfield)
+		var pixelRatio = 1;
+		#else
+		var pixelRatio = renderer.__pixelRatio;
+		#end
 
-		var width = graphics.__width;
-		var height = graphics.__height;
+		graphics.__update(renderer.__worldTransform, pixelRatio);
+
+		var width = Math.round(graphics.__width * pixelRatio);
+		var height = Math.round(graphics.__height * pixelRatio);
 
 		var renderable = (textEngine.border || textEngine.background || textEngine.text != null);
 		var needsUpscaling = false;
@@ -146,6 +153,7 @@ class CairoTextField
 			graphics.__managed = true;
 
 			graphics.__bitmap = bitmap;
+			graphics.__bitmapScale = pixelRatio;
 
 			cairo = graphics.__cairo;
 
@@ -176,7 +184,13 @@ class CairoTextField
 			cairo.setOperator(OVER);
 		}
 
-		renderer.applyMatrix(graphics.__renderTransform, cairo);
+		var matrix = Matrix.__pool.get();
+		matrix.copyFrom(graphics.__renderTransform);
+		matrix.scale(pixelRatio, pixelRatio);
+
+		renderer.applyMatrix(matrix, cairo);
+
+		Matrix.__pool.release(matrix);
 
 		if (textEngine.border)
 		{
@@ -386,8 +400,9 @@ class CairoTextField
 
 						cairo.newPath();
 						cairo.lineWidth = 1;
+						var descent = Math.floor(group.ascent * 0.185);
 						var x = group.offsetX + scrollX - bounds.x;
-						var y = Math.floor(group.offsetY + scrollY + group.ascent - bounds.y) + 0.5;
+						var y = Math.ceil(group.offsetY + scrollY + group.ascent - bounds.y) + descent + 0.5;
 						cairo.moveTo(x, y);
 						cairo.lineTo(x + group.width, y);
 						cairo.stroke();

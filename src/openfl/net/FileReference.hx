@@ -65,7 +65,7 @@ import js.Browser;
 
 	The FileReference and FileReferenceList classes also do not provide
 	methods for authentication. With servers that require authentication, you
-	can download files with the Flash<sup>?/sup> Player browser plug-in, but
+	can download files with the Flash<sup>®</sup> Player browser plug-in, but
 	uploading (on all players) and downloading (on the stand-alone or external
 	player) fails. Listen for FileReference events to determine whether
 	operations complete successfully and to handle errors.
@@ -325,7 +325,7 @@ class FileReference extends EventDispatcher
 									  unsuccessful. In this case, the value of
 									  the `creationDate` property is `null`.
 	**/
-	public var creationDate(default, null):Date;
+	public var creationDate(get, null):Date;
 
 	/**
 		The Macintosh creator type of the file, which is only used in Mac OS
@@ -385,7 +385,7 @@ class FileReference extends EventDispatcher
 									  the `modificationDate` property is
 									  `null`.
 	**/
-	public var modificationDate(default, null):Date;
+	public var modificationDate(get, null):Date;
 
 	/**
 		The name of the file on the local disk. If the FileReference object
@@ -406,7 +406,7 @@ class FileReference extends EventDispatcher
 									  sequence or an earlier call was
 									  unsuccessful.
 	**/
-	public var name(default, null):String;
+	public var name(get, null):String;
 
 	/**
 		The size of the file on the local disk in bytes. If `size` is 0, an
@@ -430,7 +430,7 @@ class FileReference extends EventDispatcher
 									  sequence or an earlier call was
 									  unsuccessful.
 	**/
-	public var size(default, null):Int;
+	public var size(get, null):Int;
 
 	/**
 		The file type.
@@ -454,7 +454,23 @@ class FileReference extends EventDispatcher
 									  unsuccessful. In this case, the value of
 									  the `type` property is `null`.
 	**/
-	public var type(default, null):String;
+	public var type(get, null):String;
+
+	/**
+		The filename extension.
+
+		A file's extension is the part of the name following (and not including)
+		the final dot ("."). If there is no dot in the filename, the extension
+		is `null`.
+
+		Note: You should use the `extension` property to determine a file's
+		type; do not use the `creator` or `type` properties. You should consider
+		the `creator` and `type` properties to be considered deprecated. They
+		apply to older versions of Mac OS.
+
+		@throws IllegalOperationError If the reference is not initialized
+	**/
+	public var extension(get, null):String;
 
 	@:noCompletion private var __data:ByteArray;
 	@:noCompletion private var __path:String;
@@ -1381,6 +1397,36 @@ class FileReference extends EventDispatcher
 	@:noCompletion private function urlLoader_onProgress(event:ProgressEvent):Void
 	{
 		dispatchEvent(event);
+	}
+
+	@:noCompletion private function get_creationDate():Date
+	{
+		return creationDate;
+	}
+
+	@:noCompletion private function get_modificationDate():Date
+	{
+		return modificationDate;
+	}
+
+	@:noCompletion private function get_name():String
+	{
+		return name;
+	}
+
+	@:noCompletion private function get_size():Int
+	{
+		return size;
+	}
+
+	@:noCompletion private function get_type():String
+	{
+		return type;
+	}
+
+	@:noCompletion private function get_extension():String
+	{
+		return extension;
 	}
 }
 #else

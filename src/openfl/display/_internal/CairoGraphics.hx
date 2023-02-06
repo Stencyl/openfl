@@ -236,7 +236,7 @@ class CairoGraphics
 
 			if (graphics.__cairo == null)
 			{
-				var bitmap = new BitmapData(Math.floor(bounds.width), Math.floor(bounds.height), true, 0);
+				var bitmap = new BitmapData(Math.floor(Math.max(1, bounds.width)), Math.floor(Math.max(1, bounds.height)), true, 0);
 				var surface = bitmap.getSurface();
 				graphics.__cairo = new Cairo(surface);
 				// graphics.__bitmap = bitmap;
@@ -676,7 +676,7 @@ class CairoGraphics
 					var c = data.readLineGradientStyle();
 					if (stroke && hasStroke)
 					{
-						closePath();
+						closePath(true);
 					}
 
 					cairo.moveTo(positionX - offsetX, positionY - offsetY);
@@ -689,7 +689,7 @@ class CairoGraphics
 					var c = data.readLineBitmapStyle();
 					if (stroke && hasStroke)
 					{
-						closePath();
+						closePath(true);
 					}
 
 					cairo.moveTo(positionX - offsetX, positionY - offsetY);
@@ -1065,14 +1065,19 @@ class CairoGraphics
 		{
 			if (stroke && hasStroke)
 			{
-				if (hasFill && closeGap)
+				if (hasFill)
 				{
-					cairo.lineTo(startX - offsetX, startY - offsetY);
-					closePath(false);
+					if (positionX != startX || positionY != startY)
+					{
+						cairo.lineTo(startX - offsetX, startY - offsetY);
+						closeGap = true;
+					}
+
+					if (closeGap) closePath(true);
 				}
 				else if (closeGap && positionX == startX && positionY == startY)
 				{
-					closePath(false);
+					closePath(true);
 				}
 
 				cairo.source = strokePattern;
@@ -1147,9 +1152,15 @@ class CairoGraphics
 		CairoGraphics.graphics = graphics;
 		CairoGraphics.allowSmoothing = renderer.__allowSmoothing;
 		CairoGraphics.worldAlpha = renderer.__getAlpha(graphics.__owner.__worldAlpha);
-		
-		graphics.__update(renderer.__worldTransform);
-		
+
+		#if (openfl_disable_hdpi || openfl_disable_hdpi_graphics)
+		var pixelRatio = 1;
+		#else
+		var pixelRatio = renderer.__pixelRatio;
+		#end
+
+		graphics.__update(renderer.__worldTransform, pixelRatio);
+
 		if (!graphics.__softwareDirty || graphics.__managed) return;
 		
 		@:privateAccess graphics.__commands.__endBuffer();

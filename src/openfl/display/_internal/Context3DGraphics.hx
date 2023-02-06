@@ -479,8 +479,20 @@ class Context3DGraphics
 
 			// }
 
+			renderer.__softwareRenderer.__pixelRatio = renderer.__pixelRatio;
+
 			var cacheTransform = renderer.__softwareRenderer.__worldTransform;
-			renderer.__softwareRenderer.__worldTransform = renderer.__worldTransform;
+
+			// TODO: Embed high-DPI graphics logic in the software renderer?
+			// TODO: Unify the software renderer matrix behavior?
+			if (graphics.__owner.__drawableType == TEXT_FIELD #if (openfl_disable_hdpi || openfl_disable_hdpi_graphics) || true #end)
+			{
+				renderer.__softwareRenderer.__worldTransform = Matrix.__identity;
+			}
+			else
+			{
+				renderer.__softwareRenderer.__worldTransform = renderer.__worldTransform;
+			}
 
 			#if (js && html5)
 			CanvasGraphics.render(graphics, cast renderer.__softwareRenderer);
@@ -493,7 +505,14 @@ class Context3DGraphics
 		else
 		{
 			graphics.__bitmap = null;
-			graphics.__update(renderer.__worldTransform);
+
+			#if (openfl_disable_hdpi || openfl_disable_hdpi_graphics)
+			var pixelRatio = 1;
+			#else
+			var pixelRatio = renderer.__pixelRatio;
+			#end
+
+			graphics.__update(renderer.__worldTransform, pixelRatio);
 
 			var bounds = graphics.__bounds;
 

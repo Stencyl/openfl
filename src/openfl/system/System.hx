@@ -32,8 +32,8 @@ import cpp.vm.Gc;
 	#if false
 	/**
 		The amount of memory (in bytes) that is allocated to
-		Adobe<sup>஼/sup> Flash<sup>஼/sup> Player or Adobe<sup>஼/sup>
-		AIR<sup>஼/sup> and that is not in use. This unused portion of
+		Adobe<sup>®</sup> Flash<sup>®</sup> Player or Adobe<sup>®</sup>
+		AIR<sup>®</sup> and that is not in use. This unused portion of
 		allocated memory (`System.totalMemory`) fluctuates as garbage
 		collection takes place. Use this property to monitor garbage
 		collection.
@@ -188,7 +188,7 @@ import cpp.vm.Gc;
 		_For the Flash Player debugger version and AIR applications only._
 		In an AIR application, the `System.gc()` method is only enabled
 		in content running in the AIR Debug Launcher(ADL) or, in an installed
-		applcation, in content in the application security sandbox.
+		application, in content in the application security sandbox.
 
 	**/
 	public static function gc():Void

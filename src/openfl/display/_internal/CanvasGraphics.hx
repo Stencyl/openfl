@@ -688,7 +688,7 @@ class CanvasGraphics
 					var c = data.readLineGradientStyle();
 					if (stroke && hasStroke)
 					{
-						closePath();
+						closePath(true);
 					}
 
 					context.moveTo(positionX - offsetX, positionY - offsetY);
@@ -702,7 +702,7 @@ class CanvasGraphics
 					var c = data.readLineBitmapStyle();
 					if (stroke && hasStroke)
 					{
-						closePath();
+						closePath(true);
 					}
 
 					context.moveTo(positionX - offsetX, positionY - offsetY);
@@ -1102,14 +1102,19 @@ class CanvasGraphics
 		{
 			if (stroke && hasStroke)
 			{
-				if (hasFill && closeGap)
+				if (hasFill)
 				{
-					context.lineTo(startX - offsetX, startY - offsetY);
-					closePath(false);
+					if (positionX != startX || positionY != startY)
+					{
+						context.lineTo(startX - offsetX, startY - offsetY);
+						closeGap = true;
+					}
+
+					if (closeGap) closePath(true);
 				}
 				else if (closeGap && positionX == startX && positionY == startY)
 				{
-					closePath(false);
+					closePath(true);
 				}
 
 				if (!hitTesting) context.stroke();
@@ -1144,7 +1149,13 @@ class CanvasGraphics
 	public static function render(graphics:Graphics, renderer:CanvasRenderer):Void
 	{
 		#if (js && html5)
-		graphics.__update(renderer.__worldTransform);
+		#if (openfl_disable_hdpi || openfl_disable_hdpi_graphics)
+		var pixelRatio = 1;
+		#else
+		var pixelRatio = renderer.__pixelRatio;
+		#end
+
+		graphics.__update(renderer.__worldTransform, pixelRatio);
 
 		@:privateAccess graphics.__commands.__endBuffer();
 		
@@ -1178,7 +1189,7 @@ class CanvasGraphics
 				var transform = graphics.__renderTransform;
 				var canvas = graphics.__canvas;
 
-				var scale = renderer.pixelRatio;
+				var scale = renderer.__pixelRatio;
 				var scaledWidth = Std.int(width * scale);
 				var scaledHeight = Std.int(height * scale);
 
