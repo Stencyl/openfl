@@ -1165,12 +1165,12 @@ class CairoGraphics
 		
 		@:privateAccess graphics.__commands.__endBuffer();
 		
-		if (!graphics.__commands.dirty && graphics.__renderTransform.equals(graphics.oldRenderTransform))
+		if (!graphics.__commands.dirty && graphics.__renderTransform.equals(graphics.__oldRenderTransform))
 		{
 			return;
 		}
 		
-		graphics.oldRenderTransform.copyFrom(graphics.__renderTransform);
+		graphics.__oldRenderTransform.copyFrom(graphics.__renderTransform);
 		
 		bounds = graphics.__bounds;
 

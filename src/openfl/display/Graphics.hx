@@ -60,6 +60,7 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var __hardwareDirty:Bool;
 	@:noCompletion private var __height:Int;
 	@:noCompletion private var __managed:Bool;
+	@:noCompletion private var __oldRenderTransform:Matrix;
 	@:noCompletion private var __positionX:Float;
 	@:noCompletion private var __positionY:Float;
 	@:noCompletion private var __quadBuffer:Context3DBuffer;
@@ -88,7 +89,6 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var __context:#if lime CanvasRenderingContext2D #else Dynamic #end;
 	#else
 	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __cairo:#if lime Cairo #else Dynamic #end;
-	@:noCompletion private var oldRenderTransform:Matrix;
 	#end
 	@:noCompletion private var __bitmap:BitmapData;
 	@:noCompletion private var __bitmapScale:Float;
@@ -99,6 +99,7 @@ import js.html.CanvasRenderingContext2D;
 
 		__commands = new DrawCommandBuffer();
 		__strokePadding = 0;
+		__oldRenderTransform = new Matrix ();
 		__positionX = 0;
 		__positionY = 0;
 		__renderTransform = new Matrix();
@@ -110,11 +111,9 @@ import js.html.CanvasRenderingContext2D;
 		__bitmapScale = 1;
 
 		__shaderBufferPool = new ObjectPool<ShaderBuffer>(function() return new ShaderBuffer());
-
+		
 		#if (js && html5)
 		moveTo(0, 0);
-		#else
-		oldRenderTransform = new Matrix ();
 		#end
 	}
 

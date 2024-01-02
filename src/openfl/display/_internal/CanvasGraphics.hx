@@ -1158,9 +1158,11 @@ class CanvasGraphics
 		graphics.__update(renderer.__worldTransform, pixelRatio);
 
 		@:privateAccess graphics.__commands.__endBuffer();
-		
-		if (graphics.__softwareDirty && graphics.__commands.dirty)
+
+		if ((graphics.__softwareDirty && graphics.__commands.dirty) || !graphics.__renderTransform.equals(graphics.__oldRenderTransform))
 		{
+			graphics.__oldRenderTransform.copyFrom(graphics.__renderTransform);
+			
 			hitTesting = false;
 
 			CanvasGraphics.graphics = graphics;
@@ -1473,6 +1475,7 @@ class CanvasGraphics
 
 			graphics.__softwareDirty = false;
 			graphics.__dirty = false;
+			graphics.__commands.markAsClean();
 		}
 		#end
 	}
