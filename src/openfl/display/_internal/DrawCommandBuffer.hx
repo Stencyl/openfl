@@ -326,7 +326,12 @@ class DrawCommandBuffer
 		//__replace(o, o_i++, ellipseHeight);
 		
 		if(!__dirty && (o_i >= o.length || o[o_i] != ellipseHeight))
+		{
 			__dirty = true;
+			#if dcb_dirty_debug
+			trace("Marked DCB as dirty due to content change." + cs());
+			#end
+		}
 		o[o_i++] = ellipseHeight;
 	}
 	
@@ -388,7 +393,12 @@ class DrawCommandBuffer
 		//__replace(o, o_i++, thickness);
 		
 		if(!__dirty && (o_i >= o.length || o[o_i] != thickness))
+		{
 			__dirty = true;
+			#if dcb_dirty_debug
+			trace("Marked DCB as dirty due to content change." + cs());
+			#end
+		}
 		o[o_i++] = thickness;
 		
 		__replace(i, i_i++, color);
@@ -499,9 +509,13 @@ class DrawCommandBuffer
 	
 	private function __endBuffer():Void
 	{
-		if(__lastLength != t_i) __dirty = true;
-		
-		//trace("Marked DCB as dirty due to length change: " + __lastLength + " -> " + t_i);
+		if(__lastLength != t_i)
+		{
+			__dirty = true;
+			#if dcb_dirty_debug
+			trace("Marked DCB as dirty due to length change: " + __lastLength + " -> " + t_i + cs());
+			#end
+		}
 		
 		__lastLength = t_i;
 	}
@@ -512,17 +526,21 @@ class DrawCommandBuffer
 		if(!__dirty && (i >= a.length || a[i] != t))
 		{
 			__dirty = true;
-			/*if(i >= a.length)
+			#if dcb_dirty_debug
+			if(i >= a.length)
 			{
-				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1) + cs());
 			}
 			else
 			{
-				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
-			}*/
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t + cs());
+			}
+			#end
 		}
 		a[i] = t;
-		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#if dcb_dirty_debug
+		trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#end
 	}
 	
 	private inline function __replaceMtx(a:Array<Dynamic>, i:Int, t:Matrix):Void
@@ -530,17 +548,21 @@ class DrawCommandBuffer
 		if(!__dirty && (i >= a.length || !t.equals(cast a[i])))
 		{
 			__dirty = true;
-			/*if(i >= a.length)
+			#if dcb_dirty_debug
+			if(i >= a.length)
 			{
-				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1) + cs());
 			}
 			else
 			{
-				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
-			}*/
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t + cs());
+			}
+			#end
 		}
 		a[i] = t;
-		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#if dcb_dirty_debug
+		trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#end
 	}
 	
 	private inline function __replaceBmp(a:Array<Dynamic>, i:Int, t:BitmapData):Void
@@ -548,20 +570,31 @@ class DrawCommandBuffer
 		if(!__dirty && (i >= a.length || t != a[i] || t.image.version != objVersions[i]))
 		{
 			__dirty = true;
-			/*if(i >= a.length)
+			#if dcb_dirty_debug
+			if(i >= a.length)
 			{
-				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1));
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1) + cs());
 			}
 			else
 			{
-				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t);
-			}*/
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t + cs());
+			}
+			#end
 		}
 		a[i] = t;
 		
 		while(objVersions.length < i) objVersions.push(0);
 		objVersions[i] = t.image.version;
 		
-		//trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#if dcb_dirty_debug
+		trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#end
 	}
+
+	#if dcb_dirty_debug
+	private inline function cs():String
+	{
+	    return "\n" + haxe.CallStack.toString(haxe.CallStack.callStack());
+	}
+	#end
 }
