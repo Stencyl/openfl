@@ -537,6 +537,11 @@ class OpenGLRenderer extends DisplayObjectRenderer
 				shader.__context = __context3D;
 				shader.__init();
 			}
+			else if (shader.__context != __context3D)
+			{
+				shader.__context = __context3D;
+				shader.__reinit();
+			}
 
 			// currentShader = shader;
 			return shader;
@@ -556,6 +561,11 @@ class OpenGLRenderer extends DisplayObjectRenderer
 				shader.__context = __context3D;
 				shader.__init();
 			}
+			else if (shader.__context != __context3D)
+			{
+				shader.__context = __context3D;
+				shader.__reinit();
+			}
 
 			// currentShader = shader;
 			return shader;
@@ -574,6 +584,11 @@ class OpenGLRenderer extends DisplayObjectRenderer
 			{
 				shader.__context = __context3D;
 				shader.__init();
+			}
+			else if (shader.__context != __context3D)
+			{
+				shader.__context = __context3D;
+				shader.__reinit();
 			}
 
 			// currentShader = shader;

@@ -628,7 +628,7 @@ class Context3DTilemap
 	{
 		numTiles = count;
 
-		if (tilemap.__buffer == null)
+		@:privateAccess if (tilemap.__buffer == null || tilemap.__buffer.context3D != context)
 		{
 			tilemap.__buffer = new Context3DBuffer(context, QUADS, numTiles, dataPerVertex);
 		}

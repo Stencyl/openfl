@@ -728,6 +728,39 @@ class Shader
 			lastMatch = position.pos + position.len;
 		}
 	}
+	
+	@:noCompletion private function __reinit():Void
+	{
+		//__initGL won't reinitialize fields that already exist in __data
+		var oldData = __data;
+		__data = cast new ShaderData(null);
+		
+		if (__glFragmentSource != null && __glVertexSource != null)
+		{
+			__glSourceDirty = true;
+			program = null;
+			__inputBitmapData = null;
+			__paramBool = null;
+			__paramFloat = null;
+			__paramInt = null;
+			__initGL();
+			
+			for (parameter in __paramBool)
+			{
+				parameter.value = Reflect.field(oldData, parameter.name).value;
+			}
+
+			for (parameter in __paramFloat)
+			{
+				parameter.value = Reflect.field(oldData, parameter.name).value;
+			}
+
+			for (parameter in __paramInt)
+			{
+				parameter.value = Reflect.field(oldData, parameter.name).value;
+			}
+		}
+	}
 
 	@:noCompletion private function __update():Void
 	{

@@ -18,6 +18,7 @@ import openfl.utils.ObjectPool;
 import openfl.Vector;
 #if lime
 import lime.graphics.cairo.Cairo;
+import lime.graphics.RenderContext;
 #end
 #if (js && html5)
 import js.html.CanvasElement;
@@ -74,6 +75,7 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var __triangleIndexBufferData:UInt16Array;
 	@:noCompletion private var __usedShaderBuffers:List<ShaderBuffer>;
 	@:noCompletion private var __vertexBuffer:VertexBuffer3D;
+	@:noCompletion private var __vertexBufferContext:#if lime RenderContext #else Dynamic #end;
 	@:noCompletion private var __vertexBufferCount:Int;
 	@:noCompletion private var __vertexBufferCountUVT:Int;
 	@:noCompletion private var __vertexBufferData:Float32Array;

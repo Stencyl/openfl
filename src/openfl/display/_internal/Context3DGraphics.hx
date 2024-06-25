@@ -125,7 +125,7 @@ class Context3DGraphics
 						var dataPerVertex = 4;
 						var stride = dataPerVertex * 4;
 
-						if (graphics.__quadBuffer == null)
+						@:privateAccess if (graphics.__quadBuffer == null || graphics.__quadBuffer.context3D != context)
 						{
 							graphics.__quadBuffer = new Context3DBuffer(context, QUADS, length, dataPerVertex);
 						}
@@ -319,6 +319,17 @@ class Context3DGraphics
 		{
 			graphics.__quadBuffer.flushVertexBufferData();
 		}
+		
+		if(graphics.__vertexBufferContext != context.__context)
+		{
+			graphics.__vertexBufferContext = context.__context;
+			graphics.__triangleIndexBuffer = null;
+			graphics.__triangleIndexBufferCount = 0;
+			graphics.__vertexBuffer = null;
+			graphics.__vertexBufferCount = 0;
+			graphics.__vertexBufferUVT = null;
+			graphics.__vertexBufferCountUVT = 0;
+		}
 
 		if (triangleIndexBufferPosition > 0)
 		{
@@ -337,7 +348,6 @@ class Context3DGraphics
 		if (vertexBufferPosition > 0)
 		{
 			var buffer = graphics.__vertexBuffer;
-
 			if (buffer == null || vertexBufferPosition > graphics.__vertexBufferCount)
 			{
 				buffer = context.createVertexBuffer(vertexBufferPosition, 4, DYNAMIC_DRAW);
