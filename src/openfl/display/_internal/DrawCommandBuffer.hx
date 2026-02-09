@@ -197,13 +197,13 @@ class DrawCommandBuffer
 		prepareWrite();
 		
 		__replace(types, t_i++, BEGIN_GRADIENT_FILL);
-		__replace(o, o_i++, type);
+		__replaceObj(o, o_i++, type);
 		__replace(ii, ii_i++, colors);
 		__replace(ff, ff_i++, alphas);
 		__replace(ii, ii_i++, ratios);
 		__replaceMtx(o, o_i++, matrix);
-		__replace(o, o_i++, spreadMethod);
-		__replace(o, o_i++, interpolationMethod);
+		__replaceObj(o, o_i++, spreadMethod);
+		__replaceObj(o, o_i++, interpolationMethod);
 		__replace(f, f_i++, focalPointRatio);
 	}
 
@@ -212,7 +212,7 @@ class DrawCommandBuffer
 		prepareWrite();
 		
 		__replace(types, t_i++, BEGIN_SHADER_FILL);
-		__replace(o, o_i++, shaderBuffer);
+		__replaceObj(o, o_i++, shaderBuffer);
 	}
 
 	public function clear():Void
@@ -295,9 +295,9 @@ class DrawCommandBuffer
 		prepareWrite();
 		
 		__replace(types, t_i++, DRAW_QUADS);
-		__replace(o, o_i++, rects);
-		__replace(o, o_i++, indices);
-		__replace(o, o_i++, transforms);
+		__replaceObj(o, o_i++, rects);
+		__replaceObj(o, o_i++, indices);
+		__replaceObj(o, o_i++, transforms);
 	}
 	
 	public function drawRect(x:Float, y:Float, width:Float, height:Float):Void
@@ -323,7 +323,7 @@ class DrawCommandBuffer
 		__replace(f, f_i++, ellipseWidth);
 		
 		//Hand-inlined to prevent some weird unification issue
-		//__replace(o, o_i++, ellipseHeight);
+		//__replaceObj(o, o_i++, ellipseHeight);
 		
 		if(!__dirty && (o_i >= o.length || o[o_i] != ellipseHeight))
 		{
@@ -341,10 +341,10 @@ class DrawCommandBuffer
 		prepareWrite();
 		
 		__replace(types, t_i++, DRAW_TRIANGLES);
-		__replace(o, o_i++, vertices);
-		__replace(o, o_i++, indices);
-		__replace(o, o_i++, uvtData);
-		__replace(o, o_i++, culling);
+		__replaceObj(o, o_i++, vertices);
+		__replaceObj(o, o_i++, indices);
+		__replaceObj(o, o_i++, uvtData);
+		__replaceObj(o, o_i++, culling);
 	}
 	
 	public function endFill():Void
@@ -371,13 +371,13 @@ class DrawCommandBuffer
 		prepareWrite();
 		
 		__replace(types, t_i++, LINE_GRADIENT_STYLE);
-		__replace(o, o_i++, type);
+		__replaceObj(o, o_i++, type);
 		__replace(ii, ii_i++, colors);
 		__replace(ff, ff_i++, alphas);
 		__replace(ii, ii_i++, ratios);
 		__replaceMtx(o, o_i++, matrix);
-		__replace(o, o_i++, spreadMethod);
-		__replace(o, o_i++, interpolationMethod);
+		__replaceObj(o, o_i++, spreadMethod);
+		__replaceObj(o, o_i++, interpolationMethod);
 		__replace(f, f_i++, focalPointRatio);
 	}
 	
@@ -390,7 +390,7 @@ class DrawCommandBuffer
 		__replace(types, t_i++, LINE_STYLE);
 		
 		//Hand-inlined to prevent some weird unification issue
-		//__replace(o, o_i++, thickness);
+		//__replaceObj(o, o_i++, thickness);
 		
 		if(!__dirty && (o_i >= o.length || o[o_i] != thickness))
 		{
@@ -404,9 +404,9 @@ class DrawCommandBuffer
 		__replace(i, i_i++, color);
 		__replace(f, f_i++, alpha);
 		__replace(b, b_i++, pixelHinting);
-		__replace(o, o_i++, scaleMode);
-		__replace(o, o_i++, caps);
-		__replace(o, o_i++, joints);
+		__replaceObj(o, o_i++, scaleMode);
+		__replaceObj(o, o_i++, caps);
+		__replaceObj(o, o_i++, joints);
 		__replace(f, f_i++, miterLimit);
 	}
 	
@@ -522,6 +522,28 @@ class DrawCommandBuffer
 	
 	@:generic
 	private inline function __replace<T>(a:Array<T>, i:Int, t:T):Void
+	{
+		if(!__dirty && (i >= a.length || a[i] != t))
+		{
+			__dirty = true;
+			#if dcb_dirty_debug
+			if(i >= a.length)
+			{
+				trace("Marked DCB as dirty due to length change: " + a.length + " -> " + (i+1) + cs());
+			}
+			else
+			{
+				trace("Marked DCB as dirty due to content change at " + i + ": " + a[i] + " -> " + t + cs());
+			}
+			#end
+		}
+		a[i] = t;
+		#if dcb_dirty_debug
+		trace("Replaced item #" + i + " with " + t + " in array starting with: " + a[0]);
+		#end
+	}
+	
+	private inline function __replaceObj(a:Array<Dynamic>, i:Int, t:Dynamic):Void
 	{
 		if(!__dirty && (i >= a.length || a[i] != t))
 		{
