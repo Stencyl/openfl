@@ -2276,10 +2276,31 @@ import lime.math.Vector2;
 			}
 			#end
 
-			if (__state.renderToTexture == null && __stage3D == null)
+			var renderTargetHeight = 0;
+
+			if (__state.renderToTexture != null)
 			{
-				var contextHeight = Std.int(__stage.window.height * __stage.window.scale);
-				scissorY = contextHeight - scissorHeight - scissorY;
+				if ((__state.renderToTexture is Texture))
+				{
+					renderTargetHeight = (cast __state.renderToTexture:Texture).__height;
+				}
+				else if ((__state.renderToTexture is RectangleTexture))
+				{
+					renderTargetHeight = (cast __state.renderToTexture:RectangleTexture).__height;
+				}
+				else if ((__state.renderToTexture is CubeTexture))
+				{
+					renderTargetHeight = (cast __state.renderToTexture:CubeTexture).__size;
+				}
+			}
+			else if (__stage3D == null)
+			{
+				renderTargetHeight = Std.int(__stage.window.height * __stage.window.scale);
+			}
+
+			if (renderTargetHeight > 0)
+			{
+				scissorY = renderTargetHeight - scissorHeight - scissorY;
 			}
 
 			if (#if openfl_disable_context_cache true #else __contextState.scissorRectangle.x != scissorX
